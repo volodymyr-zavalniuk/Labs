@@ -1,0 +1,531 @@
+﻿
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>VECTOR — Physics Institute</title>
+
+<style>
+:root {
+    --bg: #151914;
+    --panel: #1c221c;
+    --panel2: #222a21;
+    --olive: #929b70;
+    --olive-bright: #b2bd88;
+    --brass: #b89b61;
+    --text: #e5e7db;
+    --muted: #858d7d;
+    --line: #394137;
+    --mono: 'Courier New', monospace;
+}
+
+* { box-sizing: border-box; }
+
+body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--text);
+    font-family: Arial, sans-serif;
+    min-height: 100vh;
+    padding-bottom: 65px;
+}
+
+/* Background grid */
+
+body::before {
+    content: "";
+    position: fixed;
+    inset: 0;
+    pointer-events: none;
+    opacity: .11;
+    background-image:
+        linear-gradient(#78846b 1px, transparent 1px),
+        linear-gradient(90deg, #78846b 1px, transparent 1px);
+    background-size: 48px 48px;
+    mask-image: linear-gradient(to bottom, black, transparent 80%);
+}
+
+.page {
+    max-width: 1250px;
+    margin: auto;
+    padding: 30px 45px 60px;
+    position: relative;
+}
+
+/* Header */
+
+header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding-bottom: 22px;
+    border-bottom: 1px solid var(--line);
+}
+
+.brand {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+}
+
+.brand-symbol {
+    width: 43px;
+    height: 43px;
+    border: 1px solid var(--olive);
+    display: grid;
+    place-items: center;
+    color: var(--olive-bright);
+    font-family: var(--mono);
+    font-size: 23px;
+    transform: rotate(45deg);
+}
+
+.brand-symbol span {
+    transform: rotate(-45deg);
+}
+
+.brand-name {
+    font-size: 17px;
+    font-weight: 800;
+    letter-spacing: 3px;
+}
+
+.brand-sub {
+    color: var(--muted);
+    font-family: var(--mono);
+    font-size: 10px;
+    letter-spacing: 2px;
+    margin-top: 5px;
+}
+
+.header-right {
+    text-align: right;
+    font-family: var(--mono);
+    font-size: 10px;
+    color: var(--muted);
+    line-height: 1.8;
+}
+
+.header-right strong {
+    color: var(--olive-bright);
+    font-weight: normal;
+}
+
+/* Hero */
+
+.hero {
+    padding: 95px 0 75px;
+    position: relative;
+}
+
+.overline {
+    font-family: var(--mono);
+    color: var(--brass);
+    font-size: 11px;
+    letter-spacing: 3px;
+    margin-bottom: 22px;
+}
+
+.hero h1 {
+    font-size: clamp(42px, 7vw, 82px);
+    line-height: .98;
+    margin: 0;
+    letter-spacing: -3px;
+    font-weight: 800;
+    max-width: 850px;
+}
+
+.hero h1 span {
+    color: var(--olive-bright);
+}
+
+.hero-description {
+    color: #a4ab9c;
+    max-width: 560px;
+    line-height: 1.8;
+    font-size: 15px;
+    margin-top: 28px;
+}
+
+.hero-bottom {
+    display: flex;
+    gap: 35px;
+    margin-top: 40px;
+    font-family: var(--mono);
+    font-size: 10px;
+    color: var(--muted);
+    letter-spacing: 1px;
+}
+
+.hero-bottom strong {
+    display: block;
+    color: var(--text);
+    font-size: 13px;
+    margin-top: 8px;
+    font-weight: normal;
+}
+
+/* Section */
+
+.section-heading {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border-bottom: 1px solid var(--line);
+    padding-bottom: 15px;
+    margin-bottom: 22px;
+}
+
+.section-heading h2 {
+    font-size: 13px;
+    letter-spacing: 2px;
+    margin: 0;
+    font-weight: 600;
+}
+
+.section-index {
+    color: var(--muted);
+    font-family: var(--mono);
+    font-size: 11px;
+}
+
+/* Navigation cards */
+
+.modules {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 13px;
+}
+
+.module {
+    position: relative;
+    min-height: 195px;
+    padding: 24px;
+    background: var(--panel);
+    border: 1px solid var(--line);
+    text-decoration: none;
+    color: var(--text);
+    transition: .2s ease;
+    overflow: hidden;
+}
+
+.module:hover {
+    background: var(--panel2);
+    border-color: var(--olive);
+    transform: translateY(-3px);
+}
+
+.module::after {
+    content: "";
+    position: absolute;
+    width: 100px;
+    height: 100px;
+    border: 1px solid #84916d;
+    opacity: .12;
+    right: -40px;
+    bottom: -45px;
+    transform: rotate(45deg);
+}
+
+.module-number {
+    font-family: var(--mono);
+    color: var(--brass);
+    font-size: 11px;
+}
+
+.module-icon {
+    font-size: 26px;
+    margin: 17px 0 13px;
+    filter: grayscale(1);
+}
+
+.module h3 {
+    font-size: 17px;
+    letter-spacing: .5px;
+    margin: 0 0 9px;
+}
+
+.module p {
+    color: var(--muted);
+    font-size: 12px;
+    line-height: 1.6;
+    margin: 0;
+}
+
+.module-arrow {
+    position: absolute;
+    top: 22px;
+    right: 22px;
+    color: var(--olive);
+    font-size: 17px;
+}
+
+/* Bottom information */
+
+.note {
+    margin-top: 65px;
+    padding: 22px 25px;
+    border-left: 2px solid var(--brass);
+    background: #1b201a;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 20px;
+}
+
+.note-title {
+    font-family: var(--mono);
+    font-size: 10px;
+    letter-spacing: 2px;
+    color: var(--brass);
+    margin-bottom: 8px;
+}
+
+.note-text {
+    color: #a4ab9c;
+    font-size: 12px;
+    line-height: 1.6;
+}
+
+.note-mark {
+    font-family: var(--mono);
+    color: var(--olive);
+    font-size: 26px;
+}
+
+/* Status bar */
+
+.statusbar {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    height: 43px;
+    background: #10140f;
+    border-top: 1px solid var(--line);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 30px;
+    z-index: 10;
+    font-family: var(--mono);
+    font-size: 10px;
+    color: var(--muted);
+    letter-spacing: .5px;
+}
+
+.status-left, .status-right {
+    display: flex;
+    gap: 22px;
+    align-items: center;
+}
+
+.status-item strong {
+    color: var(--olive-bright);
+    font-weight: normal;
+}
+
+.dot {
+    display: inline-block;
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: #9bab6e;
+    margin-right: 7px;
+}
+
+@media(max-width: 750px) {
+    .page { padding: 22px 20px 45px; }
+    .hero { padding: 65px 0 55px; }
+    .modules { grid-template-columns: repeat(2, 1fr); }
+    .header-right { display: none; }
+    .statusbar { padding: 0 12px; }
+    .status-left, .status-right { gap: 10px; }
+}
+
+@media(max-width: 480px) {
+    .modules { grid-template-columns: 1fr; }
+    .hero-bottom { flex-wrap: wrap; gap: 20px; }
+    .status-right { display: none; }
+}
+</style>
+</head>
+
+<body>
+
+<div class="page">
+
+    <header>
+        <div class="brand">
+            <div class="brand-symbol"><span>Ph</span></div>
+            <div>
+                <div class="brand-name">APPLIED PHYSICS DIVISION</div>
+                <div class="brand-sub"></div>
+            </div>
+        </div>
+
+        <div class="header-right">
+            EDUCATIONAL PLATFORM<br>
+            <strong>VIRTUAL LAB DEPARTMENT</strong>
+        </div>
+    </header>
+
+    <main>
+
+        <section class="hero">
+            <div class="overline">
+                APPLIED PHYSICS DIVISION
+            </div>
+
+            <h1>
+                <span>FORCES</span> THAT SHAPE
+            </h1>
+
+            <p class="hero-description">
+                An interactive physics simulation library designed for selfeducation.
+            </p>
+
+            <div class="hero-bottom">
+                <div>
+                    SYSTEM
+                    <strong>EDUCATIONAL</strong>
+                </div>
+                <div>	
+                    ACCESS
+                    <strong>TRAINING LIBRARY</strong>
+                </div>
+                <div>
+                    REVISION
+                    <strong>001.00</strong>
+                </div>
+            </div>
+        </section>
+
+        <section>
+            <div class="section-heading">
+                <h2>SIMULATION DIRECTORY</h2>
+                <span class="section-index">01 — MODULES</span>
+            </div>
+
+            <div class="modules" id="modules"></div>
+        </section>
+
+        <section class="note">
+            <div>
+                <div class="note-title">TRAINING DIRECTIVE</div>
+                <div class="note-text">
+                    Study the principles. Test the variables.
+                    Observe the results. Understand the system.
+                </div>
+            </div>
+            <div class="note-mark">V / 001</div>
+        </section>
+
+    </main>
+
+</div>
+
+<footer class="statusbar">
+    <div class="status-left" id="credentials"></div>
+    <div class="status-right">
+        <span><span class="dot"></span>SYSTEM ONLINE</span>
+        <span>VECTOR / 001</span>
+    </div>
+</footer>
+
+<script>
+
+/* =====================================
+   CONFIGURATION — SIMULATION MODULES
+   Add or remove entries here.
+===================================== */
+
+const modules = [
+
+    {
+        number: "01",
+        icon: "⚙",
+        title: "BALLISTICS",
+        description: "Motion, forces, acceleration and dynamics.",
+        link: "Ballistics_lab.html"
+    }
+
+];
+
+
+/* =====================================
+   CONFIGURATION — CREDENTIALS
+===================================== */
+
+const credentials = [
+    { label: "INSTITUTION", value: "New Tech Labs" },
+    { label: "DEPARTMENT", value: "PHYSICS DIVISION" },
+    { label: "EDITION", value: "2026" }
+];
+
+
+/* =====================================
+   RENDER MODULES
+===================================== */
+
+const moduleContainer = document.getElementById("modules");
+
+modules.forEach(item => {
+
+    const card = document.createElement("a");
+
+    card.className = "module";
+    card.href = item.link;
+
+    const number = document.createElement("div");
+    number.className = "module-number";
+    number.textContent = "MODULE / " + item.number;
+
+    const arrow = document.createElement("div");
+    arrow.className = "module-arrow";
+    arrow.textContent = "↗";
+
+    const icon = document.createElement("div");
+    icon.className = "module-icon";
+    icon.textContent = item.icon;
+
+    const title = document.createElement("h3");
+    title.textContent = item.title;
+
+    const description = document.createElement("p");
+    description.textContent = item.description;
+
+    card.append(number, arrow, icon, title, description);
+    moduleContainer.appendChild(card);
+
+});
+
+
+/* =====================================
+   RENDER CREDENTIALS
+===================================== */
+
+const credentialContainer =
+    document.getElementById("credentials");
+
+credentials.forEach(item => {
+
+    const element = document.createElement("span");
+    element.className = "status-item";
+
+    const label = document.createElement("span");
+    label.textContent = item.label + ": ";
+
+    const value = document.createElement("strong");
+    value.textContent = item.value;
+
+    element.append(label, value);
+    credentialContainer.appendChild(element);
+
+});
+
+</script>
+
+</body>
+</html>
