@@ -1,0 +1,1072 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Advanced Ballistics Physics Lab</title>
+    <style>
+        :root {
+            --bg-color: #0f172a;
+            --panel-bg: #1e293b;
+            --accent-color: #38bdf8;
+            --accent-hover: #0284c7;
+            --text-main: #f8fafc;
+            --text-muted: #94a3b8;
+            --border-color: #334155;
+            --mach-super: #ef4444;
+            --mach-trans: #f59e0b;
+            --mach-sub: #38bdf8;
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
+        body { background-color: var(--bg-color); color: var(--text-main); display: flex; height: 100vh; overflow: hidden; }
+
+        #sidebar {
+            width: 400px;
+            background-color: var(--panel-bg);
+            border-right: 1px solid var(--border-color);
+            padding: 16px;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            overflow-y: auto;
+            flex-shrink: 0;
+        }
+
+        h1 { font-size: 1.2rem; font-weight: 700; color: var(--accent-color); margin-bottom: 2px; }
+        p.subtitle { font-size: 0.78rem; color: var(--text-muted); margin-bottom: 4px; }
+
+        .control-group {
+            background-color: rgba(15, 23, 42, 0.5);
+            padding: 10px 12px;
+            border-radius: 8px;
+            border: 1px solid var(--border-color);
+        }
+
+        .control-group h3 {
+            font-size: 0.8rem;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            color: var(--accent-color);
+            margin-bottom: 8px;
+        }
+
+        .input-row { display: flex; flex-direction: column; gap: 2px; margin-bottom: 8px; }
+        .input-row:last-child { margin-bottom: 0; }
+
+        .label-val { display: flex; justify-content: space-between; font-size: 0.82rem; color: var(--text-muted); }
+        .label-val span.val { color: var(--text-main); font-weight: 600; font-family: monospace; }
+
+        input[type="range"], select { width: 100%; accent-color: var(--accent-color); cursor: pointer; }
+        select {
+            background-color: var(--panel-bg); color: var(--text-main);
+            border: 1px solid var(--border-color); padding: 6px 8px;
+            border-radius: 6px; font-size: 0.85rem; outline: none;
+        }
+
+        .checkbox-row { display: flex; align-items: center; gap: 8px; font-size: 0.82rem; cursor: pointer; margin-top: 4px; }
+        .btn-group { display: flex; gap: 6px; flex-wrap: wrap; }
+        button {
+            flex: 1; padding: 9px 10px; border: none; border-radius: 6px;
+            background-color: var(--accent-color); color: #0f172a;
+            font-weight: 700; font-size: 0.82rem; cursor: pointer; transition: background 0.2s;
+        }
+        button:hover { background-color: var(--accent-hover); color: white; }
+        button.secondary { background-color: var(--border-color); color: var(--text-main); }
+        button.secondary:hover { background-color: #475569; }
+
+        #main-content { flex: 1; display: flex; flex-direction: column; padding: 14px; gap: 12px; overflow: hidden; position: relative; }
+
+        /* Top Bar & Gauges */
+        #top-overview { display: flex; gap: 12px; height: 115px; }
+        #metrics-bar {
+            flex: 1; display: grid; grid-template-columns: repeat(auto-fit, minmax(110px, 1fr)); gap: 8px;
+        }
+        .metric-card {
+            background-color: var(--panel-bg); border: 1px solid var(--border-color);
+            padding: 8px 10px; border-radius: 8px; display: flex; flex-direction: column; justify-content: center;
+        }
+        .metric-card .title { font-size: 0.7rem; color: var(--text-muted); text-transform: uppercase; }
+        .metric-card .value { font-size: 1.05rem; font-weight: 700; color: var(--accent-color); font-family: monospace; margin-top: 2px; }
+
+        /* Doubled Font Sizes for Column Chart Gauges Window */
+        #gauge-window {
+            width: 290px; background-color: var(--panel-bg); border: 1px solid var(--border-color);
+            border-radius: 8px; padding: 8px 12px; display: flex; gap: 14px; justify-content: space-around;
+        }
+        .gauge-col-container { display: flex; flex-direction: column; align-items: center; width: 46%; height: 100%; }
+        .gauge-title { font-size: 1.05rem; color: var(--text-muted); text-transform: uppercase; margin-bottom: 4px; font-weight: 700; }
+        .gauge-frame {
+            flex: 1; width: 100%; background: #0f172a; border: 1px solid var(--border-color);
+            border-radius: 4px; position: relative; overflow: hidden; display: flex; align-items: flex-end;
+        }
+        .gauge-fill { width: 100%; transition: height 0.05s linear; border-radius: 2px 2px 0 0; }
+        .gauge-fill.vel { background: linear-gradient(to top, #0284c7, #38bdf8); }
+        .gauge-fill.energy { background: linear-gradient(to top, #d97706, #f59e0b); }
+        .gauge-overlay-text {
+            position: absolute; width: 100%; text-align: center; font-size: 1.15rem;
+            font-weight: 800; font-family: monospace; color: #ffffff; text-shadow: 0 2px 4px rgba(0,0,0,0.9);
+            top: 50%; transform: translateY(-50%); pointer-events: none; line-height: 1.25;
+        }
+
+        #workspace { flex: 1; display: flex; gap: 12px; min-height: 0; }
+        #canvas-container {
+            flex: 1; background-color: #020617; border: 1px solid var(--border-color);
+            border-radius: 8px; position: relative; overflow: hidden;
+        }
+        canvas { width: 100%; height: 100%; display: block; }
+
+        /* Doubled Font Sizes for Toggleable Diagnostic Side Panel */
+        #side-plots-panel {
+            width: 380px; background-color: var(--panel-bg); border: 1px solid var(--border-color);
+            border-radius: 8px; padding: 10px; display: flex; flex-direction: column; gap: 10px;
+            transition: all 0.3s ease; flex-shrink: 0;
+        }
+        #side-plots-panel.hidden { display: none; }
+        .plot-box { flex: 1; display: flex; flex-direction: column; background: #0f172a; border: 1px solid var(--border-color); border-radius: 6px; padding: 8px; }
+        .plot-title { font-size: 1.15rem; color: var(--accent-color); font-weight: 700; margin-bottom: 6px; }
+        .plot-canvas-wrap { flex: 1; position: relative; width: 100%; height: 100%; }
+
+        #scrubber-container {
+            background-color: var(--panel-bg); border: 1px solid var(--border-color);
+            padding: 8px 14px; border-radius: 8px; display: flex; align-items: center; gap: 12px;
+        }
+        #scrubber-container span { font-size: 0.85rem; color: var(--text-muted); }
+
+        .overlay-legend {
+            display: flex; flex-direction: column; gap: 4px; font-size: 0.78rem;
+            background: rgba(15, 23, 42, 0.6); padding: 8px 10px; border-radius: 6px; border: 1px solid var(--border-color);
+        }
+        .legend-item { display: flex; align-items: center; gap: 6px; }
+        .legend-color { width: 10px; height: 10px; border-radius: 2px; display: inline-block; flex-shrink: 0; }
+        .mach-legend { display: flex; gap: 10px; font-size: 0.75rem; margin-top: 2px; }
+    </style>
+</head>
+<body>
+
+    <div id="sidebar">
+        <div>
+            <h1>Ballistics Physics Lab</h1>
+            <p class="subtitle">G7 Table Interpolation, Dynamic Atmosphere & Visualizer</p>
+        </div>
+
+        <div class="control-group">
+            <h3>Preset Ordnance Selection</h3>
+            <div class="input-row">
+                <select id="preset-select">
+                    <option value="custom">Custom Configuration</option>
+                    <option value="556_nato">5.56×45mm NATO (M193 - 3.56g)</option>
+                    <option value="762_nato">7.62×51mm NATO (M80 - 9.5g)</option>
+                    <option value="50_bmg">.50 BMG (M33 Ball - 42g)</option>
+                    <option value="300_winmag">.300 Win Mag (Match - 12g)</option>
+                    <option value="40mm_grenade">40mm HE Grenade (M430 - 230g)</option>
+                    <option value="120mm_tank">120mm Tank Cannon (HE - 11.4kg)</option>
+                    <option value="155mm_artillery">155mm Artillery Shell (M107 - 43.2kg)</option>
+                    <option value="heavy_naval">406mm Naval Gun (Mark 8 AP - 1225kg)</option>
+                </select>
+            </div>
+        </div>
+
+        <div class="control-group">
+            <h3>Initial Launch Conditions</h3>
+            <div class="input-row">
+                <div class="label-val"><span>Velocity (<i>v</i><sub>0</sub>)</span><span class="val" id="val-v0">800 m/s</span></div>
+                <input type="range" id="v0" min="10" max="2500" step="10" value="800">
+            </div>
+            <div class="input-row">
+                <div class="label-val"><span>Launch Angle (<i>θ</i>)</span><span class="val" id="val-angle">45°</span></div>
+                <input type="range" id="angle" min="1" max="89" step="1" value="45">
+            </div>
+        </div>
+
+        <div class="control-group">
+            <h3>Projectile Mass & Geometry</h3>
+            <div class="input-row">
+                <div class="label-val"><span>Mass (<i>m</i> - Logarithmic)</span><span class="val" id="val-mass">10.0 g</span></div>
+                <input type="range" id="mass-log" min="0" max="1000" step="1" value="300">
+            </div>
+            <div class="input-row">
+                <div class="label-val"><span>Caliber (<i>d</i>)</span><span class="val" id="val-caliber">7.62 mm</span></div>
+                <input type="range" id="caliber" min="1" max="500" step="0.1" value="7.62">
+            </div>
+            <div class="input-row">
+                <div class="label-val"><span>Form Factor (<i>i</i><sub>G7</sub>)</span><span class="val" id="val-cd">1.00</span></div>
+                <input type="range" id="cd" min="0.10" max="2.50" step="0.01" value="1.00">
+            </div>
+        </div>
+
+        <div class="control-group">
+            <h3>Environment & Atmospheric Wind</h3>
+            <div class="input-row">
+                <div class="label-val"><span>10m Ref Wind (<i>v</i><sub>wind</sub>)</span><span class="val" id="val-wind">0 m/s</span></div>
+                <input type="range" id="wind" min="-50" max="50" step="1" value="0">
+            </div>
+            <div class="input-row">
+                <div class="label-val"><span>Surface Temp (<i>T</i><sub>surf</sub>)</span><span class="val" id="val-temp">15 °C</span></div>
+                <input type="range" id="temp" min="-40" max="50" step="1" value="15">
+            </div>
+            <div class="input-row">
+                <div class="label-val"><span>Launch Altitude (<i>h</i><sub>0</sub>)</span><span class="val" id="val-altitude">0 m</span></div>
+                <input type="range" id="altitude" min="0" max="10000" step="100" value="0">
+            </div>
+        </div>
+
+        <div class="control-group">
+            <h3>Display Options</h3>
+            <label class="checkbox-row">
+                <input type="checkbox" id="show-vacuum" checked> Vacuum Trajectory Reference
+            </label>
+            <label class="checkbox-row">
+                <input type="checkbox" id="show-vectors" checked> Velocity & Drag Vectors
+            </label>
+        </div>
+
+        <div class="btn-group">
+            <button id="btn-play">Play Animation</button>
+            <button id="btn-save" class="secondary">Save Overlay</button>
+            <button id="btn-toggle-plots" class="secondary">Toggle Diagnostic Plots</button>
+            <button id="btn-clear" class="secondary">Clear Overlays</button>
+        </div>
+
+        <div id="legend" class="overlay-legend"></div>
+    </div>
+
+    <div id="main-content">
+        <div id="top-overview">
+            <div id="metrics-bar">
+                <div class="metric-card">
+                    <div class="title">Max Height</div>
+                    <div class="value" id="m-height">0.0 m</div>
+                </div>
+                <div class="metric-card">
+                    <div class="title">Total Range</div>
+                    <div class="value" id="m-range">0.0 m</div>
+                </div>
+                <div class="metric-card">
+                    <div class="title">Flight Time</div>
+                    <div class="value" id="m-time">0.00 s</div>
+                </div>
+                <div class="metric-card">
+                    <div class="title">Speed of Sound</div>
+                    <div class="value" id="m-csound">340.3 m/s</div>
+                </div>
+                <div class="metric-card">
+                    <div class="title">Mach & <i>C</i><sub>d</sub>(<i>M</i>)</div>
+                    <div class="value" id="m-mach">M 2.35 (0.23)</div>
+                </div>
+                <div class="metric-card">
+                    <div class="title">Wind @ Altitude</div>
+                    <div class="value" id="m-wind-alt">0.0 m/s</div>
+                </div>
+            </div>
+
+            <!-- Column Chart Gauges Window -->
+            <div id="gauge-window">
+                <div class="gauge-col-container">
+                    <div class="gauge-title">Velocity</div>
+                    <div class="gauge-frame">
+                        <div id="gauge-fill-v" class="gauge-fill vel" style="height: 100%;"></div>
+                        <div id="gauge-text-v" class="gauge-overlay-text">800 m/s<br>100%</div>
+                    </div>
+                </div>
+                <div class="gauge-col-container">
+                    <div class="gauge-title">Energy</div>
+                    <div class="gauge-frame">
+                        <div id="gauge-fill-e" class="gauge-fill energy" style="height: 100%;"></div>
+                        <div id="gauge-text-e" class="gauge-overlay-text">3.20 kJ<br>100%</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div id="workspace">
+            <div id="canvas-container">
+                <canvas id="canvas"></canvas>
+            </div>
+
+            <!-- Toggleable Real-Time Diagnostic Side Panel -->
+            <div id="side-plots-panel">
+                <div class="plot-box">
+                    <div class="plot-title">Velocity vs Distance</div>
+                    <div class="plot-canvas-wrap">
+                        <canvas id="canvas-v-dist"></canvas>
+                    </div>
+                </div>
+                <div class="plot-box">
+                    <div class="plot-title">Kinetic Energy vs Distance</div>
+                    <div class="plot-canvas-wrap">
+                        <canvas id="canvas-e-dist"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div id="scrubber-container">
+            <span>Flight Inspector:</span>
+            <input type="range" id="scrubber" min="0" max="1000" value="1000" style="flex:1;">
+            <span id="scrubber-val" style="min-width: 65px; font-family: monospace;">0.00 s</span>
+        </div>
+    </div>
+
+    <script>
+        // Empirically defined G7 Drag Table
+        const G7_TABLE = [
+            { m: 0.00, cd: 0.125 },
+            { m: 0.20, cd: 0.125 },
+            { m: 0.40, cd: 0.125 },
+            { m: 0.60, cd: 0.126 },
+            { m: 0.70, cd: 0.128 },
+            { m: 0.80, cd: 0.134 },
+            { m: 0.90, cd: 0.155 },
+            { m: 0.95, cd: 0.190 },
+            { m: 1.00, cd: 0.301 },
+            { m: 1.05, cd: 0.355 },
+            { m: 1.10, cd: 0.362 },
+            { m: 1.20, cd: 0.350 },
+            { m: 1.40, cd: 0.317 },
+            { m: 1.60, cd: 0.290 },
+            { m: 1.80, cd: 0.269 },
+            { m: 2.00, cd: 0.254 },
+            { m: 2.20, cd: 0.242 },
+            { m: 2.50, cd: 0.228 },
+            { m: 3.00, cd: 0.211 },
+            { m: 3.50, cd: 0.199 },
+            { m: 4.00, cd: 0.190 }
+        ];
+
+        // Linear Interpolation for G7 Drag Coefficient
+        function getG7TableCd(Mach) {
+            if (Mach <= G7_TABLE[0].m) return G7_TABLE[0].cd;
+            if (Mach >= G7_TABLE[G7_TABLE.length - 1].m) return G7_TABLE[G7_TABLE.length - 1].cd;
+            for (let i = 0; i < G7_TABLE.length - 1; i++) {
+                const p1 = G7_TABLE[i];
+                const p2 = G7_TABLE[i + 1];
+                if (Mach >= p1.m && Mach <= p2.m) {
+                    const alpha = (Mach - p1.m) / (p2.m - p1.m);
+                    return p1.cd + alpha * (p2.cd - p1.cd);
+                }
+            }
+            return G7_TABLE[0].cd;
+        }
+
+        const MIN_MASS = 0.0005;
+        const MAX_MASS = 1000.0;
+        const LOG_MIN = Math.log(MIN_MASS);
+        const LOG_MAX = Math.log(MAX_MASS);
+
+        function logSliderToMass(val) {
+            const pct = parseFloat(val) / 1000.0;
+            return Math.exp(LOG_MIN + pct * (LOG_MAX - LOG_MIN));
+        }
+
+        function massToLogSlider(mass) {
+            const clamped = Math.max(MIN_MASS, Math.min(MAX_MASS, mass));
+            const pct = (Math.log(clamped) - LOG_MIN) / (LOG_MAX - LOG_MIN);
+            return Math.round(pct * 1000);
+        }
+
+        function formatMass(massKg) {
+            if (massKg < 1.0) {
+                return `${(massKg * 1000).toFixed(massKg < 0.01 ? 2 : 1)} g`;
+            } else {
+                return `${massKg >= 100 ? massKg.toFixed(0) : massKg.toFixed(2)} kg`;
+            }
+        }
+
+        function formatEnergy(Joules) {
+            if (Joules >= 1e6) return `${(Joules / 1e6).toFixed(2)} MJ`;
+            if (Joules >= 1000) return `${(Joules / 1000).toFixed(2)} kJ`;
+            return `${Joules.toFixed(1)} J`;
+        }
+
+        const presets = {
+            "556_nato":        { v0: 990, angle: 45, mass: 0.00356, caliber: 5.56, cd: 1.02 },
+            "762_nato":        { v0: 850, angle: 45, mass: 0.00950, caliber: 7.62, cd: 1.00 },
+            "50_bmg":          { v0: 890, angle: 45, mass: 0.04200, caliber: 12.7, cd: 0.95 },
+            "300_winmag":      { v0: 900, angle: 45, mass: 0.01200, caliber: 7.62, cd: 0.90 },
+            "40mm_grenade":    { v0: 240, angle: 45, mass: 0.23000, caliber: 40.0, cd: 1.60 },
+            "120mm_tank":      { v0: 1140, angle: 45, mass: 11.4000, caliber: 120.0, cd: 0.85 },
+            "155mm_artillery": { v0: 827, angle: 45, mass: 43.2000, caliber: 155.0, cd: 0.88 },
+            "heavy_naval":     { v0: 762, angle: 45, mass: 1225.00, caliber: 406.0, cd: 0.80 }
+        };
+
+        const overlayColors = ['#ec4899', '#10b981', '#a855f7', '#14b8a6', '#f97316', '#6366f1'];
+        const inputs = ['v0', 'angle', 'mass-log', 'caliber', 'cd', 'wind', 'temp', 'altitude'];
+        const params = {};
+
+        const canvas = document.getElementById('canvas');
+        const ctx = canvas.getContext('2d');
+        const canvasV = document.getElementById('canvas-v-dist');
+        const ctxV = canvasV.getContext('2d');
+        const canvasE = document.getElementById('canvas-e-dist');
+        const ctxE = canvasE.getContext('2d');
+
+        const scrubber = document.getElementById('scrubber');
+        const btnPlay = document.getElementById('btn-play');
+
+        let simData = { drag: [], vac: [] };
+        let overlays = [];
+        let animId = null;
+        let isPlaying = false;
+        let currentTime = 0;
+        let maxSimTime = 1.0;
+
+        function updateInputValues() {
+            inputs.forEach(id => {
+                const el = document.getElementById(id);
+                params[id] = parseFloat(el.value);
+            });
+
+            params.mass = logSliderToMass(params['mass-log']);
+
+            document.getElementById('val-v0').innerText = `${params.v0} m/s`;
+            document.getElementById('val-angle').innerText = `${params.angle}°`;
+            document.getElementById('val-mass').innerText = formatMass(params.mass);
+            document.getElementById('val-caliber').innerText = `${params.caliber.toFixed(2)} mm`;
+            document.getElementById('val-cd').innerText = `${params.cd.toFixed(2)}`;
+            
+            const windVal = params.wind;
+            const windLabel = windVal > 0 ? `+${windVal} m/s` : (windVal < 0 ? `${windVal} m/s` : `0 m/s`);
+            document.getElementById('val-wind').innerText = windLabel;
+            
+            document.getElementById('val-temp').innerText = `${params.temp} °C`;
+            document.getElementById('val-altitude').innerText = `${params.altitude} m`;
+
+            runSimulation();
+        }
+
+        // Logarithmic Wind Boundary Layer
+        function getWindAtAltitude(y, refWind) {
+            if (refWind === 0) return 0;
+            const z0 = 0.05;
+            const yRef = 10.0;
+            const effY = Math.max(0.01, y);
+            const ratio = Math.log((effY + z0) / z0) / Math.log((yRef + z0) / z0);
+            return refWind * ratio;
+        }
+
+        // International Standard Atmosphere & Dynamic Speed of Sound
+        function getAtmosphere(y, T_surf_C, h0) {
+            const g = 9.80665;
+            const L = 0.0065;
+            const P0 = 101325;
+            const R = 287.058;
+            const gamma = 1.4;
+
+            const h = Math.max(0, h0 + y);
+            const T_surf_K = T_surf_C + 273.15;
+            const T_h = Math.max(100, T_surf_K - L * h);
+
+            const P_h = P0 * Math.pow(Math.max(0.001, 1 - (L * h) / T_surf_K), (g / (R * L)));
+            const rho = P_h / (R * T_h);
+            const speedOfSound = Math.sqrt(gamma * R * T_h);
+
+            return { rho, T_h, P_h, speedOfSound };
+        }
+
+        function derivatives(x, y, vx, vy) {
+            const g = 9.80665;
+            const atmos = getAtmosphere(y, params.temp, params.altitude);
+            const wind_y = getWindAtAltitude(y, params.wind);
+
+            const v_rel_x = vx - wind_y;
+            const v_rel_y = vy;
+            const v_rel = Math.hypot(v_rel_x, v_rel_y);
+            const Mach = v_rel / atmos.speedOfSound;
+
+            // Compute Cd dynamically using G7 lookup table scaled by form factor (params.cd)
+            const g7BaseCd = getG7TableCd(Mach);
+            const Cd = params.cd * g7BaseCd;
+
+            const r = (params.caliber / 1000) / 2;
+            const area = Math.PI * r * r;
+
+            const k = (0.5 * atmos.rho * Cd * area) / params.mass;
+            const ax = -k * v_rel * v_rel_x;
+            const ay = -g - k * v_rel * v_rel_y;
+            const v_abs = Math.hypot(vx, vy);
+            const Ek = 0.5 * params.mass * v_abs * v_abs;
+
+            return { 
+                dx: vx, dy: vy, dvx: ax, dvy: ay, 
+                rho: atmos.rho, speedOfSound: atmos.speedOfSound, 
+                Mach, Cd, Fd: k * params.mass * v_rel * v_rel, 
+                v_rel, wind_y, v_abs, Ek 
+            };
+        }
+
+        function rk4Step(x, y, vx, vy, dt) {
+            const k1 = derivatives(x, y, vx, vy);
+            const k2 = derivatives(x + 0.5 * dt * k1.dx, y + 0.5 * dt * k1.dy, vx + 0.5 * dt * k1.dvx, vy + 0.5 * dt * k1.dvy);
+            const k3 = derivatives(x + 0.5 * dt * k2.dx, y + 0.5 * dt * k2.dy, vx + 0.5 * dt * k2.dvx, vy + 0.5 * dt * k2.dvy);
+            const k4 = derivatives(x + dt * k3.dx, y + dt * k3.dy, vx + dt * k3.dvx, vy + dt * k3.dvy);
+
+            return {
+                x: x + (dt / 6) * (k1.dx + 2*k2.dx + 2*k3.dx + k4.dx),
+                y: y + (dt / 6) * (k1.dy + 2*k2.dy + 2*k3.dy + k4.dy),
+                vx: vx + (dt / 6) * (k1.dvx + 2*k2.dvx + 2*k3.dvx + k4.dvx),
+                vy: vy + (dt / 6) * (k1.dvy + 2*k2.dvy + 2*k3.dvy + k4.dvy),
+                rho: k1.rho, speedOfSound: k1.speedOfSound,
+                Mach: k1.Mach, Cd: k1.Cd, Fd: k1.Fd, v_rel: k1.v_rel,
+                wind_y: k1.wind_y, v_abs: k1.v_abs, Ek: k1.Ek
+            };
+        }
+
+        function runSimulation() {
+            const dt = 0.005;
+            const rad = params.angle * (Math.PI / 180);
+
+            let state = { x: 0, y: 0, vx: params.v0 * Math.cos(rad), vy: params.v0 * Math.sin(rad) };
+            let t = 0;
+            const initRel = derivatives(0, 0, state.vx, state.vy);
+            simData.drag = [{ t: 0, x: 0, y: 0, vx: state.vx, vy: state.vy, ...initRel }];
+
+            while (state.y >= 0 && t < 400) {
+                const next = rk4Step(state.x, state.y, state.vx, state.vy, dt);
+                t += dt;
+                state = next;
+                simData.drag.push({ t, ...state });
+                if (state.y < 0) break;
+            }
+
+            const g = 9.80665;
+            let vx0 = params.v0 * Math.cos(rad);
+            let vy0 = params.v0 * Math.sin(rad);
+            let tVacMax = (2 * vy0) / g;
+            simData.vac = [];
+            for (let tv = 0; tv <= tVacMax; tv += dt * 2) {
+                let xv = vx0 * tv;
+                let yv = vy0 * tv - 0.5 * g * tv * tv;
+                simData.vac.push({ t: tv, x: xv, y: yv });
+            }
+
+            recalculateMaxTime();
+            updateMetrics();
+            updateLegend();
+            draw();
+            drawSidePlots();
+        }
+
+        function recalculateMaxTime() {
+            maxSimTime = simData.drag[simData.drag.length - 1].t;
+            overlays.forEach(ov => {
+                const ovLastT = ov.drag[ov.drag.length - 1].t;
+                if (ovLastT > maxSimTime) maxSimTime = ovLastT;
+            });
+            currentTime = (parseFloat(scrubber.value) / 1000.0) * maxSimTime;
+        }
+
+        function getTrajectoryPointAtTime(traj, time) {
+            if (!traj || traj.length === 0) return { x: 0, y: 0, vx: 0, vy: 0, Mach: 0, Cd: 0, Fd: 0, v_abs: 0, Ek: 0, finished: true };
+            if (time <= 0) return { ...traj[0], finished: false };
+            const last = traj[traj.length - 1];
+            if (time >= last.t) return { ...last, finished: true };
+
+            const dt = 0.005;
+            let idx = Math.floor(time / dt);
+            idx = Math.max(0, Math.min(idx, traj.length - 2));
+            const p1 = traj[idx];
+            const p2 = traj[idx + 1];
+            const alpha = (time - p1.t) / (p2.t - p1.t);
+
+            return {
+                t: time,
+                x: p1.x + alpha * (p2.x - p1.x),
+                y: p1.y + alpha * (p2.y - p1.y),
+                vx: p1.vx + alpha * (p2.vx - p1.vx),
+                vy: p1.vy + alpha * (p2.vy - p1.vy),
+                Mach: p1.Mach + alpha * (p2.Mach - p1.Mach),
+                Cd: p1.Cd + alpha * (p2.Cd - p1.Cd),
+                Fd: p1.Fd + alpha * (p2.Fd - p1.Fd),
+                speedOfSound: p1.speedOfSound + alpha * (p2.speedOfSound - p1.speedOfSound),
+                wind_y: p1.wind_y + alpha * (p2.wind_y - p1.wind_y),
+                v_abs: p1.v_abs + alpha * (p2.v_abs - p1.v_abs),
+                Ek: p1.Ek + alpha * (p2.Ek - p1.Ek),
+                finished: false
+            };
+        }
+
+        function updateMetrics() {
+            const dragPts = simData.drag;
+            const last = dragPts[dragPts.length - 1];
+            let maxH = 0;
+            dragPts.forEach(p => { if (p.y > maxH) maxH = p.y; });
+
+            document.getElementById('m-height').innerText = `${maxH.toFixed(1)} m`;
+            document.getElementById('m-range').innerText = `${last.x.toFixed(1)} m`;
+            document.getElementById('m-time').innerText = `${last.t.toFixed(2)} s`;
+            
+            const curr = getTrajectoryPointAtTime(simData.drag, currentTime);
+            document.getElementById('m-csound').innerText = `${curr.speedOfSound.toFixed(1)} m/s`;
+            document.getElementById('m-mach').innerText = `M ${curr.Mach.toFixed(2)} (${curr.Cd.toFixed(3)})`;
+            document.getElementById('m-wind-alt').innerText = `${curr.wind_y.toFixed(1)} m/s`;
+
+            // Gauge Column Updates
+            const initialPt = simData.drag[0];
+            const v0 = initialPt.v_abs;
+            const E0 = initialPt.Ek;
+
+            const vPct = Math.max(0, Math.min(100, (curr.v_abs / v0) * 100));
+            const ePct = Math.max(0, Math.min(100, (curr.Ek / E0) * 100));
+
+            document.getElementById('gauge-fill-v').style.height = `${vPct}%`;
+            document.getElementById('gauge-text-v').innerHTML = `${Math.round(curr.v_abs)} m/s<br>${vPct.toFixed(0)}%`;
+
+            document.getElementById('gauge-fill-e').style.height = `${ePct}%`;
+            document.getElementById('gauge-text-e').innerHTML = `${formatEnergy(curr.Ek)}<br>${ePct.toFixed(0)}%`;
+        }
+
+        function updateLegend() {
+            const legend = document.getElementById('legend');
+            const windText = params.wind !== 0 ? `, Wind: ${params.wind > 0 ? '+' : ''}${params.wind}m/s` : '';
+            const activeCaption = `Active: ${params.caliber}mm | ${formatMass(params.mass)} | ${params.v0}m/s | i_G7 ${params.cd.toFixed(2)}${windText}`;
+            
+            let html = `
+                <div class="legend-item"><span class="legend-color" style="background:#38bdf8;"></span> <strong>${activeCaption}</strong></div>
+                <div class="mach-legend">
+                    <span><strong style="color:var(--mach-super);">■</strong> Supersonic (&gt;M1.2)</span>
+                    <span><strong style="color:var(--mach-trans);">■</strong> Transonic (M0.8-1.2)</span>
+                    <span><strong style="color:var(--mach-sub);">■</strong> Subsonic (&lt;M0.8)</span>
+                </div>
+            `;
+            overlays.forEach(ov => {
+                html += `<div class="legend-item"><span class="legend-color" style="background:${ov.color};"></span> ${ov.label}</div>`;
+            });
+            legend.innerHTML = html;
+        }
+
+        function getMachColor(Mach) {
+            if (Mach > 1.2) return '#ef4444';      // Red: Supersonic
+            if (Mach >= 0.8) return '#f59e0b';     // Yellow: Transonic
+            return '#38bdf8';                       // Blue: Subsonic
+        }
+
+        function draw() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+            const paddingLeft = 90;
+            const paddingBottom = 75;
+            const paddingTop = 40;
+            const paddingRight = 40;
+
+            let maxX = Math.max(...simData.drag.map(p => p.x));
+            let maxY = Math.max(...simData.drag.map(p => p.y));
+
+            if (document.getElementById('show-vacuum').checked && simData.vac.length > 0) {
+                maxX = Math.max(maxX, ...simData.vac.map(p => p.x));
+                maxY = Math.max(maxY, ...simData.vac.map(p => p.y));
+            }
+
+            overlays.forEach(ov => {
+                maxX = Math.max(maxX, ...ov.drag.map(p => p.x));
+                maxY = Math.max(maxY, ...ov.drag.map(p => p.y));
+            });
+
+            maxX = Math.max(maxX, 10);
+            maxY = Math.max(maxY, 10);
+
+            const scaleX = (canvas.width - paddingLeft - paddingRight) / (maxX * 1.05);
+            const scaleY = (canvas.height - paddingTop - paddingBottom) / (maxY * 1.15);
+
+            function toScreen(x, y) {
+                return {
+                    sx: paddingLeft + x * scaleX,
+                    sy: canvas.height - paddingBottom - y * scaleY
+                };
+            }
+
+            // Grid & Double-Sized Axes Labels
+            ctx.strokeStyle = '#334155';
+            ctx.lineWidth = 1.5;
+            ctx.beginPath();
+            
+            const gridSteps = 5;
+            for (let i = 0; i <= gridSteps; i++) {
+                let gx = (maxX / gridSteps) * i;
+                let gy = (maxY / gridSteps) * i;
+
+                let p1 = toScreen(gx, 0);
+                let p2 = toScreen(gx, maxY);
+                ctx.moveTo(p1.sx, p1.sy);
+                ctx.lineTo(p2.sx, p2.sy);
+
+                let p3 = toScreen(0, gy);
+                let p4 = toScreen(maxX, gy);
+                ctx.moveTo(p3.sx, p3.sy);
+                ctx.lineTo(p4.sx, p4.sy);
+
+                ctx.fillStyle = '#94a3b8';
+                ctx.font = 'bold 20px "Segoe UI", monospace';
+                ctx.fillText(`${Math.round(gx)}m`, p1.sx - 20, canvas.height - paddingBottom + 32);
+                ctx.fillText(`${Math.round(gy)}m`, 15, p3.sy + 7);
+            }
+            ctx.stroke();
+
+            // Ground Line
+            ctx.strokeStyle = '#475569';
+            ctx.lineWidth = 3;
+            ctx.beginPath();
+            let gStart = toScreen(0, 0);
+            let gEnd = toScreen(maxX * 1.1, 0);
+            ctx.moveTo(gStart.sx, gStart.sy);
+            ctx.lineTo(gEnd.sx, gEnd.sy);
+            ctx.stroke();
+
+            // Vacuum Reference Line
+            if (document.getElementById('show-vacuum').checked && simData.vac.length > 0) {
+                ctx.strokeStyle = '#ef4444';
+                ctx.lineWidth = 2;
+                ctx.setLineDash([6, 6]);
+                ctx.beginPath();
+                simData.vac.forEach((pt, i) => {
+                    let sp = toScreen(pt.x, pt.y);
+                    if (i === 0) ctx.moveTo(sp.sx, sp.sy);
+                    else ctx.lineTo(sp.sx, sp.sy);
+                });
+                ctx.stroke();
+                ctx.setLineDash([]);
+            }
+
+            // Saved Overlays
+            overlays.forEach(ov => {
+                ctx.strokeStyle = ov.color;
+                ctx.globalAlpha = 0.3;
+                ctx.lineWidth = 2.5;
+                ctx.setLineDash([4, 4]);
+                ctx.beginPath();
+                ov.drag.forEach((pt, i) => {
+                    let sp = toScreen(pt.x, pt.y);
+                    if (i === 0) ctx.moveTo(sp.sx, sp.sy);
+                    else ctx.lineTo(sp.sx, sp.sy);
+                });
+                ctx.stroke();
+                ctx.setLineDash([]);
+
+                ctx.globalAlpha = 0.9;
+                ctx.lineWidth = 3;
+                ctx.beginPath();
+                let started = false;
+                for (let i = 0; i < ov.drag.length; i++) {
+                    if (ov.drag[i].t > currentTime) break;
+                    let sp = toScreen(ov.drag[i].x, ov.drag[i].y);
+                    if (!started) { ctx.moveTo(sp.sx, sp.sy); started = true; }
+                    else ctx.lineTo(sp.sx, sp.sy);
+                }
+                ctx.stroke();
+
+                const ovPt = getTrajectoryPointAtTime(ov.drag, currentTime);
+                const ovSp = toScreen(ovPt.x, ovPt.y);
+                ctx.fillStyle = ov.color;
+                ctx.beginPath();
+                ctx.arc(ovSp.sx, ovSp.sy, 6, 0, 2 * Math.PI);
+                ctx.fill();
+            });
+
+            // Thicker Active Line with Color-Mapped Mach Heatmap
+            ctx.globalAlpha = 0.25;
+            for (let i = 1; i < simData.drag.length; i++) {
+                let p1 = toScreen(simData.drag[i-1].x, simData.drag[i-1].y);
+                let p2 = toScreen(simData.drag[i].x, simData.drag[i].y);
+                ctx.strokeStyle = getMachColor(simData.drag[i].Mach);
+                ctx.lineWidth = 5;
+                ctx.beginPath();
+                ctx.moveTo(p1.sx, p1.sy);
+                ctx.lineTo(p2.sx, p2.sy);
+                ctx.stroke();
+            }
+
+            ctx.globalAlpha = 1.0;
+            ctx.lineWidth = 7;
+            for (let i = 1; i < simData.drag.length; i++) {
+                if (simData.drag[i].t > currentTime) break;
+                let p1 = toScreen(simData.drag[i-1].x, simData.drag[i-1].y);
+                let p2 = toScreen(simData.drag[i].x, simData.drag[i].y);
+                ctx.strokeStyle = getMachColor(simData.drag[i].Mach);
+                ctx.beginPath();
+                ctx.moveTo(p1.sx, p1.sy);
+                ctx.lineTo(p2.sx, p2.sy);
+                ctx.stroke();
+            }
+
+            // Active Marker & Vectors
+            const curr = getTrajectoryPointAtTime(simData.drag, currentTime);
+            const sp = toScreen(curr.x, curr.y);
+
+            ctx.fillStyle = '#ffffff';
+            ctx.beginPath();
+            ctx.arc(sp.sx, sp.sy, 8, 0, 2 * Math.PI);
+            ctx.fill();
+            ctx.strokeStyle = getMachColor(curr.Mach);
+            ctx.lineWidth = 3;
+            ctx.stroke();
+
+            document.getElementById('scrubber-val').innerText = `${currentTime.toFixed(2)} s`;
+
+            if (document.getElementById('show-vectors').checked && !curr.finished) {
+                const vScale = 0.12;
+                const vSp = toScreen(curr.x + curr.vx * vScale, curr.y + curr.vy * vScale);
+                ctx.strokeStyle = '#22c55e';
+                ctx.lineWidth = 3;
+                ctx.beginPath();
+                ctx.moveTo(sp.sx, sp.sy);
+                ctx.lineTo(vSp.sx, vSp.sy);
+                ctx.stroke();
+
+                const vRelMag = curr.v_rel;
+                if (vRelMag > 0) {
+                    const dragScale = 0.4;
+                    const fx = - ((curr.vx - curr.wind_y) / vRelMag) * curr.Fd * dragScale;
+                    const fy = - (curr.vy / vRelMag) * curr.Fd * dragScale;
+                    const fSp = toScreen(curr.x + fx, curr.y + fy);
+
+                    ctx.strokeStyle = '#f59e0b';
+                    ctx.lineWidth = 3;
+                    ctx.beginPath();
+                    ctx.moveTo(sp.sx, sp.sy);
+                    ctx.lineTo(fSp.sx, fSp.sy);
+                    ctx.stroke();
+                }
+            }
+
+            ctx.globalAlpha = 1.0;
+        }
+
+        // Doubled Font Sizes on Real-Time Diagnostic Side Charts
+        function drawSidePlots() {
+            const panel = document.getElementById('side-plots-panel');
+            if (panel.classList.contains('hidden')) return;
+
+            // Plot 1: Velocity vs Distance
+            drawDiagnosticChart(ctxV, canvasV, p => p.x, p => p.v_abs, 'm/s', '#38bdf8');
+
+            // Plot 2: Kinetic Energy vs Distance
+            drawDiagnosticChart(ctxE, canvasE, p => p.x, p => p.Ek, 'Energy', '#f59e0b');
+        }
+
+        function drawDiagnosticChart(cCtx, cCanvas, xAccessor, yAccessor, unitLabel, color) {
+            cCtx.clearRect(0, 0, cCanvas.width, cCanvas.height);
+
+            const padL = 70, padB = 35, padT = 20, padR = 20;
+            let maxX = Math.max(...simData.drag.map(xAccessor));
+            let maxY = Math.max(...simData.drag.map(yAccessor));
+
+            overlays.forEach(ov => {
+                maxX = Math.max(maxX, ...ov.drag.map(xAccessor));
+                maxY = Math.max(maxY, ...ov.drag.map(yAccessor));
+            });
+
+            maxX = Math.max(1, maxX);
+            maxY = Math.max(1, maxY);
+
+            const scaleX = (cCanvas.width - padL - padR) / maxX;
+            const scaleY = (cCanvas.height - padT - padB) / maxY;
+
+            // Gridlines & Doubled Chart Font Size (16px)
+            cCtx.strokeStyle = '#334155';
+            cCtx.lineWidth = 1;
+            cCtx.beginPath();
+            for (let i = 0; i <= 3; i++) {
+                let gy = (maxY / 3) * i;
+                let sy = cCanvas.height - padB - gy * scaleY;
+                cCtx.moveTo(padL, sy);
+                cCtx.lineTo(cCanvas.width - padR, sy);
+                cCtx.fillStyle = '#94a3b8';
+                cCtx.font = 'bold 16px "Segoe UI", monospace';
+                const label = unitLabel === 'Energy' ? formatEnergy(gy) : `${Math.round(gy)}`;
+                cCtx.fillText(label, 6, sy + 5);
+            }
+            cCtx.stroke();
+
+            // Overlay curves
+            overlays.forEach(ov => {
+                cCtx.strokeStyle = ov.color;
+                cCtx.lineWidth = 2;
+                cCtx.globalAlpha = 0.5;
+                cCtx.beginPath();
+                ov.drag.forEach((pt, i) => {
+                    let sx = padL + xAccessor(pt) * scaleX;
+                    let sy = cCanvas.height - padB - yAccessor(pt) * scaleY;
+                    if (i === 0) cCtx.moveTo(sx, sy);
+                    else cCtx.lineTo(sx, sy);
+                });
+                cCtx.stroke();
+            });
+
+            // Active curve
+            cCtx.strokeStyle = color;
+            cCtx.lineWidth = 3;
+            cCtx.globalAlpha = 1.0;
+            cCtx.beginPath();
+            simData.drag.forEach((pt, i) => {
+                let sx = padL + xAccessor(pt) * scaleX;
+                let sy = cCanvas.height - padB - yAccessor(pt) * scaleY;
+                if (i === 0) cCtx.moveTo(sx, sy);
+                else cCtx.lineTo(sx, sy);
+            });
+            cCtx.stroke();
+
+            // Vertical Inspection Line
+            const curr = getTrajectoryPointAtTime(simData.drag, currentTime);
+            let currSx = padL + xAccessor(curr) * scaleX;
+            cCtx.strokeStyle = '#ffffff';
+            cCtx.lineWidth = 2;
+            cCtx.setLineDash([4, 4]);
+            cCtx.beginPath();
+            cCtx.moveTo(currSx, padT);
+            cCtx.lineTo(currSx, cCanvas.height - padB);
+            cCtx.stroke();
+            cCtx.setLineDash([]);
+        }
+
+        function stopAnimation() {
+            if (animId) {
+                cancelAnimationFrame(animId);
+                animId = null;
+            }
+            isPlaying = false;
+            btnPlay.innerText = 'Play Animation';
+        }
+
+        function startAnimation() {
+            stopAnimation();
+            isPlaying = true;
+            btnPlay.innerText = 'Pause Animation';
+
+            if (parseFloat(scrubber.value) >= 995) {
+                scrubber.value = 0;
+                currentTime = 0;
+            }
+
+            let startTime = null;
+            const duration = 3000;
+
+            function animate(timestamp) {
+                if (!isPlaying) return;
+                if (!startTime) startTime = timestamp;
+
+                const elapsed = timestamp - startTime;
+                let progress = elapsed / duration;
+
+                if (progress >= 1.0) {
+                    progress = 1.0;
+                    currentTime = maxSimTime;
+                    scrubber.value = 1000;
+                    draw();
+                    updateMetrics();
+                    drawSidePlots();
+                    stopAnimation();
+                    return;
+                }
+
+                currentTime = progress * maxSimTime;
+                scrubber.value = Math.round(progress * 1000);
+                draw();
+                updateMetrics();
+                drawSidePlots();
+
+                animId = requestAnimationFrame(animate);
+            }
+
+            animId = requestAnimationFrame(animate);
+        }
+
+        btnPlay.addEventListener('click', () => {
+            if (isPlaying) stopAnimation();
+            else startAnimation();
+        });
+
+        inputs.forEach(id => {
+            document.getElementById(id).addEventListener('input', () => {
+                document.getElementById('preset-select').value = 'custom';
+                stopAnimation();
+                updateInputValues();
+            });
+        });
+
+        document.getElementById('preset-select').addEventListener('change', (e) => {
+            const key = e.target.value;
+            if (presets[key]) {
+                stopAnimation();
+                const p = presets[key];
+                document.getElementById('v0').value = p.v0;
+                document.getElementById('angle').value = p.angle;
+                document.getElementById('mass-log').value = massToLogSlider(p.mass);
+                document.getElementById('caliber').value = p.caliber;
+                document.getElementById('cd').value = p.cd;
+                updateInputValues();
+            }
+        });
+
+        document.getElementById('scrubber').addEventListener('input', (e) => {
+            stopAnimation();
+            const pct = parseFloat(e.target.value) / 1000.0;
+            currentTime = pct * maxSimTime;
+            draw();
+            updateMetrics();
+            drawSidePlots();
+        });
+
+        document.getElementById('btn-save').addEventListener('click', () => {
+            if (simData.drag.length > 0) {
+                const presetSelect = document.getElementById('preset-select');
+                let labelName = '';
+                if (presetSelect.value !== 'custom' && presetSelect.selectedIndex > 0) {
+                    labelName = presetSelect.options[presetSelect.selectedIndex].text.split('(')[0].trim();
+                } else {
+                    labelName = `${params.caliber}mm (${formatMass(params.mass)}, ${params.v0}m/s)`;
+                }
+                
+                const color = overlayColors[overlays.length % overlayColors.length];
+                overlays.push({
+                    label: labelName,
+                    color: color,
+                    drag: JSON.parse(JSON.stringify(simData.drag))
+                });
+                if (overlays.length > 6) overlays.shift();
+                
+                recalculateMaxTime();
+                updateLegend();
+                draw();
+                drawSidePlots();
+            }
+        });
+
+        document.getElementById('btn-clear').addEventListener('click', () => {
+            overlays = [];
+            recalculateMaxTime();
+            updateLegend();
+            draw();
+            drawSidePlots();
+        });
+
+        document.getElementById('btn-toggle-plots').addEventListener('click', () => {
+            const panel = document.getElementById('side-plots-panel');
+            panel.classList.toggle('hidden');
+            resizeCanvas();
+        });
+
+        document.getElementById('show-vacuum').addEventListener('change', draw);
+        document.getElementById('show-vectors').addEventListener('change', draw);
+
+        function resizeCanvas() {
+            canvas.width = canvas.parentElement.clientWidth;
+            canvas.height = canvas.parentElement.clientHeight;
+            
+            canvasV.width = canvasV.parentElement.clientWidth;
+            canvasV.height = canvasV.parentElement.clientHeight;
+
+            canvasE.width = canvasE.parentElement.clientWidth;
+            canvasE.height = canvasE.parentElement.clientHeight;
+
+            draw();
+            drawSidePlots();
+        }
+
+        window.addEventListener('resize', resizeCanvas);
+
+        // App Initialization
+        resizeCanvas();
+        updateInputValues();
+    </script>
+</body>
+</html>
