@@ -9,7 +9,7 @@
 </script>  
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Advanced Mobile-Responsive Ballistics Physics Lab</title>
+    <title>Advanced Ballistics Physics Lab</title>
     <style>
         :root {
             --bg-color: #0f172a;
@@ -26,83 +26,128 @@
 
         /* Fluid Root Font Size scaling for all viewports */
         html {
-            font-size: clamp(12px, 0.85vw + 0.4vh, 16px);
+            font-size: clamp(11px, 0.75vw + 0.35vh, 15px);
+            width: 100vw;
+            height: 100vh;
+            overflow: hidden;
         }
 
-        * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
+        * { 
+            box-sizing: border-box; 
+            margin: 0; 
+            padding: 0; 
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; 
+        }
         
         body { 
             background-color: var(--bg-color); 
             color: var(--text-main); 
             display: flex; 
             height: 100vh; 
+            height: 100dvh;
             width: 100vw;
+            max-width: 100vw;
             overflow: hidden; 
         }
 
+        /* Mobile Header Toggle Bar (Hidden on Large Screens) */
+        #mobile-header {
+            display: none;
+            background-color: var(--panel-bg);
+            border-bottom: 1px solid var(--border-color);
+            padding: 0.4rem 0.75rem;
+            align-items: center;
+            justify-content: space-between;
+            flex-shrink: 0;
+            z-index: 100;
+        }
+
+        #mobile-header h1 {
+            font-size: 1rem;
+            color: var(--accent-color);
+            font-weight: 700;
+        }
+
+        #btn-toggle-sidebar {
+            background-color: var(--accent-color);
+            color: #0f172a;
+            border: none;
+            padding: 0.35rem 0.65rem;
+            border-radius: 4px;
+            font-size: 0.78rem;
+            font-weight: 700;
+            cursor: pointer;
+        }
+
+        /* Sidebar Styling */
         #sidebar {
-            width: 380px;
+            width: 340px;
             background-color: var(--panel-bg);
             border-right: 1px solid var(--border-color);
-            padding: 1rem;
+            padding: 0.75rem;
             display: flex;
             flex-direction: column;
-            gap: 0.75rem;
+            gap: 0.5rem;
             overflow-y: auto;
             flex-shrink: 0;
             -webkit-overflow-scrolling: touch;
+            transition: transform 0.25s ease, max-height 0.25s ease;
         }
 
-        h1 { font-size: 1.25rem; font-weight: 700; color: var(--accent-color); margin-bottom: 2px; }
-        p.subtitle { font-size: 0.8rem; color: var(--text-muted); margin-bottom: 4px; }
+        .sidebar-title-block {
+            display: block;
+        }
+
+        h1 { font-size: 1.1rem; font-weight: 700; color: var(--accent-color); margin-bottom: 2px; }
+        p.subtitle { font-size: 0.75rem; color: var(--text-muted); margin-bottom: 2px; }
 
         .control-group {
             background-color: rgba(15, 23, 42, 0.5);
-            padding: 0.75rem;
-            border-radius: 8px;
+            padding: 0.5rem 0.65rem;
+            border-radius: 6px;
             border: 1px solid var(--border-color);
         }
 
         .control-group h3 {
-            font-size: 0.82rem;
+            font-size: 0.75rem;
             text-transform: uppercase;
-            letter-spacing: 0.05em;
+            letter-spacing: 0.04em;
             color: var(--accent-color);
-            margin-bottom: 0.5rem;
+            margin-bottom: 0.35rem;
         }
 
-        .input-row { display: flex; flex-direction: column; gap: 3px; margin-bottom: 0.6rem; }
+        .input-row { display: flex; flex-direction: column; gap: 2px; margin-bottom: 0.45rem; }
         .input-row:last-child { margin-bottom: 0; }
 
-        .label-val { display: flex; justify-content: space-between; font-size: 0.82rem; color: var(--text-muted); }
+        .label-val { display: flex; justify-content: space-between; font-size: 0.75rem; color: var(--text-muted); }
         .label-val span.val { color: var(--text-main); font-weight: 600; font-family: monospace; }
 
         input[type="range"], select { 
             width: 100%; 
             accent-color: var(--accent-color); 
             cursor: pointer; 
-            min-height: 28px;
+            min-height: 24px;
         }
         
         select {
             background-color: var(--panel-bg); color: var(--text-main);
-            border: 1px solid var(--border-color); padding: 6px 8px;
-            border-radius: 6px; font-size: 0.85rem; outline: none;
+            border: 1px solid var(--border-color); padding: 4px 6px;
+            border-radius: 4px; font-size: 0.8rem; outline: none;
         }
 
-        .checkbox-row { display: flex; align-items: center; gap: 8px; font-size: 0.85rem; cursor: pointer; margin-top: 4px; }
-        .btn-group { display: flex; gap: 6px; flex-wrap: wrap; }
+        .checkbox-row { display: flex; align-items: center; gap: 6px; font-size: 0.78rem; cursor: pointer; margin-top: 2px; }
+        .btn-group { display: flex; gap: 4px; flex-wrap: wrap; }
         
         button {
             flex: 1; 
-            min-width: 110px;
-            padding: 0.6rem 0.75rem; 
+            min-width: 90px;
+            padding: 0.45rem 0.55rem; 
             border: none; 
-            border-radius: 6px;
+            border-radius: 5px;
             background-color: var(--accent-color); 
             color: #0f172a;
             font-weight: 700; 
-            font-size: 0.85rem; 
+            font-size: 0.78rem; 
             cursor: pointer; 
             transition: background 0.2s;
             touch-action: manipulation;
@@ -111,143 +156,174 @@
         button.secondary { background-color: var(--border-color); color: var(--text-main); }
         button.secondary:hover { background-color: #475569; }
 
+        /* Main Content Layout */
         #main-content { 
             flex: 1; 
             display: flex; 
             flex-direction: column; 
-            padding: 1rem; 
-            gap: 0.75rem; 
+            padding: 0.65rem; 
+            gap: 0.5rem; 
             overflow: hidden; 
             position: relative; 
             min-width: 0;
+            width: 100%;
         }
 
-        /* Top Overview Bar */
-        #top-overview { display: flex; gap: 0.75rem; height: 115px; flex-shrink: 0; }
+        /* Top Overview Bar - Aggressively Compact */
+        #top-overview { 
+            display: flex; 
+            gap: 0.5rem; 
+            min-height: 58px; 
+            max-height: 72px;
+            flex-shrink: 0; 
+            width: 100%;
+        }
+
         #metrics-bar {
             flex: 1; 
             display: grid; 
-            grid-template-columns: repeat(auto-fit, minmax(105px, 1fr)); 
-            gap: 0.5rem;
+            grid-template-columns: repeat(auto-fit, minmax(95px, 1fr)); 
+            gap: 0.35rem;
             min-width: 0;
         }
+
         .metric-card {
             background-color: var(--panel-bg); 
             border: 1px solid var(--border-color);
-            padding: 0.5rem; 
-            border-radius: 8px; 
+            padding: 0.3rem 0.45rem; 
+            border-radius: 6px; 
             display: flex; 
             flex-direction: column; 
             justify-content: center;
         }
-        .metric-card .title { font-size: 0.7rem; color: var(--text-muted); text-transform: uppercase; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-        .metric-card .value { font-size: 1.05rem; font-weight: 700; color: var(--accent-color); font-family: monospace; margin-top: 2px; }
+        .metric-card .title { 
+            font-size: 0.65rem; 
+            color: var(--text-muted); 
+            text-transform: uppercase; 
+            white-space: nowrap; 
+            overflow: hidden; 
+            text-overflow: ellipsis; 
+        }
+        .metric-card .value { 
+            font-size: 0.88rem; 
+            font-weight: 700; 
+            color: var(--accent-color); 
+            font-family: monospace; 
+            margin-top: 1px; 
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
 
-        /* Column Chart Gauges Window */
+        /* Column Chart Gauges Window - Desktop View */
         #gauge-window {
-            width: 290px; 
+            width: 220px; 
             background-color: var(--panel-bg); 
             border: 1px solid var(--border-color);
-            border-radius: 8px; 
-            padding: 0.5rem 0.75rem; 
+            border-radius: 6px; 
+            padding: 0.35rem 0.5rem; 
             display: flex; 
-            gap: 0.75rem; 
+            gap: 0.5rem; 
             justify-content: space-around;
             flex-shrink: 0;
         }
         .gauge-col-container { display: flex; flex-direction: column; align-items: center; width: 46%; height: 100%; }
-        .gauge-title { font-size: 1.05rem; color: var(--text-muted); text-transform: uppercase; margin-bottom: 4px; font-weight: 700; }
+        .gauge-title { font-size: 0.75rem; color: var(--text-muted); text-transform: uppercase; margin-bottom: 2px; font-weight: 700; }
         .gauge-frame {
             flex: 1; width: 100%; background: #0f172a; border: 1px solid var(--border-color);
-            border-radius: 4px; position: relative; overflow: hidden; display: flex; align-items: flex-end;
+            border-radius: 3px; position: relative; overflow: hidden; display: flex; align-items: flex-end;
         }
         .gauge-fill { width: 100%; transition: height 0.05s linear; border-radius: 2px 2px 0 0; }
         .gauge-fill.vel { background: linear-gradient(to top, #0284c7, #38bdf8); }
         .gauge-fill.energy { background: linear-gradient(to top, #d97706, #f59e0b); }
         .gauge-overlay-text {
-            position: absolute; width: 100%; text-align: center; font-size: 1.15rem;
-            font-weight: 800; font-family: monospace; color: #ffffff; text-shadow: 0 2px 4px rgba(0,0,0,0.9);
-            top: 50%; transform: translateY(-50%); pointer-events: none; line-height: 1.2;
+            position: absolute; width: 100%; text-align: center; font-size: 0.78rem;
+            font-weight: 800; font-family: monospace; color: #ffffff; text-shadow: 0 1px 3px rgba(0,0,0,0.9);
+            top: 50%; transform: translateY(-50%); pointer-events: none; line-height: 1.1;
         }
 
-        #workspace { flex: 1; display: flex; gap: 0.75rem; min-height: 0; position: relative; }
+        /* Compact Number Cards replacing gauges on mobile */
+        #compact-gauges-mobile {
+            display: none;
+        }
+
+        /* Workspace Layout */
+        #workspace { 
+            flex: 1; 
+            display: flex; 
+            gap: 0.5rem; 
+            min-height: 0; 
+            position: relative; 
+            width: 100%;
+        }
         
         #canvas-container {
             flex: 1; 
             background-color: #020617; 
             border: 1px solid var(--border-color);
-            border-radius: 8px; 
+            border-radius: 6px; 
             position: relative; 
             overflow: hidden;
-            min-height: 250px;
+            min-height: 180px;
+            width: 100%;
         }
         canvas { width: 100%; height: 100%; display: block; }
 
-        /* Toggleable Diagnostic Side Panel */
+        /* Supplementary Diagnostic Side Panel */
         #side-plots-panel {
-            width: 360px; 
+            width: 270px; 
             background-color: var(--panel-bg); 
             border: 1px solid var(--border-color);
-            border-radius: 8px; 
-            padding: 0.6rem; 
+            border-radius: 6px; 
+            padding: 0.45rem; 
             display: flex; 
             flex-direction: column; 
-            gap: 0.6rem;
-            transition: all 0.3s ease; 
+            gap: 0.45rem;
+            transition: all 0.25s ease; 
             flex-shrink: 0;
         }
         #side-plots-panel.hidden { display: none; }
-        .plot-box { flex: 1; display: flex; flex-direction: column; background: #0f172a; border: 1px solid var(--border-color); border-radius: 6px; padding: 0.5rem; min-height: 0; }
-        .plot-title { font-size: 1.1rem; color: var(--accent-color); font-weight: 700; margin-bottom: 4px; }
-        .plot-canvas-wrap { flex: 1; position: relative; width: 100%; height: 100%; min-height: 120px; }
+        .plot-box { flex: 1; display: flex; flex-direction: column; background: #0f172a; border: 1px solid var(--border-color); border-radius: 5px; padding: 0.35rem; min-height: 0; }
+        .plot-title { font-size: 0.82rem; color: var(--accent-color); font-weight: 700; margin-bottom: 2px; }
+        .plot-canvas-wrap { flex: 1; position: relative; width: 100%; height: 100%; min-height: 80px; }
 
+        /* Scrubber Bar */
         #scrubber-container {
             background-color: var(--panel-bg); 
             border: 1px solid var(--border-color);
-            padding: 0.5rem 0.85rem; 
-            border-radius: 8px; 
+            padding: 0.4rem 0.65rem; 
+            border-radius: 6px; 
             display: flex; 
             align-items: center; 
-            gap: 0.75rem;
+            gap: 0.5rem;
             flex-shrink: 0;
+            width: 100%;
         }
-        #scrubber-container span { font-size: 0.85rem; color: var(--text-muted); }
+        #scrubber-container span { font-size: 0.78rem; color: var(--text-muted); }
 
         .overlay-legend {
-            display: flex; flex-direction: column; gap: 4px; font-size: 0.78rem;
-            background: rgba(15, 23, 42, 0.6); padding: 8px 10px; border-radius: 6px; border: 1px solid var(--border-color);
+            display: flex; flex-direction: column; gap: 3px; font-size: 0.72rem;
+            background: rgba(15, 23, 42, 0.6); padding: 6px 8px; border-radius: 5px; border: 1px solid var(--border-color);
         }
-        .legend-item { display: flex; align-items: center; gap: 6px; }
-        .legend-color { width: 10px; height: 10px; border-radius: 2px; display: inline-block; flex-shrink: 0; }
-        .mach-legend { display: flex; gap: 10px; font-size: 0.75rem; margin-top: 2px; flex-wrap: wrap; }
+        .legend-item { display: flex; align-items: center; gap: 5px; }
+        .legend-color { width: 8px; height: 8px; border-radius: 2px; display: inline-block; flex-shrink: 0; }
+        .mach-legend { display: flex; gap: 8px; font-size: 0.7rem; margin-top: 2px; flex-wrap: wrap; }
 
         /* ==========================================================================
-           RESOLUTION-SPECIFIC BREAKPOINTS & MOBILE RESPONSIVE MEDIA QUERIES
+           RESPONSIVE MEDIA QUERIES FOR SMARTPHONES & NARROW SCREENS
            ========================================================================== */
 
-        /* Desktop Adjustments (1366px & 1100px) */
+        /* Desktop Breakpoints (1366px & 1100px) */
         @media (max-width: 1366px) and (min-width: 1025px) {
-            #sidebar { width: 320px; padding: 0.85rem; }
-            #side-plots-panel { width: 310px; }
-            #gauge-window { width: 250px; }
+            #sidebar { width: 300px; padding: 0.65rem; }
+            #side-plots-panel { width: 250px; }
+            #gauge-window { width: 200px; }
         }
 
         @media (max-width: 1100px) and (min-width: 1025px) {
-            #sidebar { width: 280px; padding: 0.75rem; }
-            #side-plots-panel { width: 260px; }
-            #gauge-window { width: 220px; }
-            .gauge-title { font-size: 0.9rem; }
-            .gauge-overlay-text { font-size: 0.95rem; }
-        }
-
-        /* Short Vertical Screens (<768px height) */
-        @media (max-height: 768px) and (min-width: 1025px) {
-            #sidebar { padding: 0.6rem; gap: 0.4rem; }
-            .control-group { padding: 0.4rem 0.6rem; }
-            .input-row { margin-bottom: 0.3rem; }
-            #top-overview { height: 90px; }
-            .metric-card { padding: 0.35rem 0.5rem; }
-            .metric-card .value { font-size: 0.95rem; }
+            #sidebar { width: 260px; padding: 0.5rem; }
+            #side-plots-panel { width: 220px; }
+            #gauge-window { width: 180px; }
         }
 
         /* Tablet & Mobile Layout Transformation (< 1024px) */
@@ -256,114 +332,159 @@
                 flex-direction: column;
                 height: 100vh;
                 height: 100dvh;
-                overflow-y: auto;
+                overflow: hidden;
+            }
+
+            #mobile-header {
+                display: flex;
+            }
+
+            .sidebar-title-block {
+                display: none;
             }
 
             #sidebar {
                 width: 100%;
-                max-height: 40vh;
+                max-height: 42vh;
                 border-right: none;
                 border-bottom: 1px solid var(--border-color);
-                flex-shrink: 0;
+                position: absolute;
+                top: 40px;
+                left: 0;
+                right: 0;
+                z-index: 99;
+                box-shadow: 0 8px 16px rgba(0,0,0,0.5);
+                transform: translateY(-120%);
+                transition: transform 0.3s ease;
+            }
+
+            #sidebar.open {
+                transform: translateY(0);
             }
 
             #main-content {
                 flex: 1;
-                min-height: 650px;
-                overflow: visible;
+                padding: 0.4rem;
+                gap: 0.35rem;
+                height: calc(100vh - 40px);
+                height: calc(100dvh - 40px);
             }
+
+            #top-overview {
+                height: auto;
+                min-height: 48px;
+                max-height: 90px;
+            }
+
+            #metrics-bar {
+                grid-template-columns: repeat(3, 1fr);
+                gap: 0.25rem;
+            }
+
+            .metric-card {
+                padding: 0.2rem 0.35rem;
+            }
+
+            .metric-card .title {
+                font-size: 0.6rem;
+            }
+
+            .metric-card .value {
+                font-size: 0.8rem;
+            }
+
+            /* Replace visual bar gauges with numbers on smartphone/narrow screens */
+            #gauge-window {
+                display: none;
+            }
+
+            #compact-gauges-mobile {
+                display: flex;
+                flex-direction: column;
+                justify-content: center;
+                gap: 0.2rem;
+                width: 105px;
+                flex-shrink: 0;
+                background: var(--panel-bg);
+                border: 1px solid var(--border-color);
+                border-radius: 6px;
+                padding: 0.25rem 0.4rem;
+            }
+
+            .compact-gauge-item {
+                display: flex;
+                flex-direction: column;
+            }
+            .compact-gauge-item .cg-title { font-size: 0.58rem; color: var(--text-muted); text-transform: uppercase; }
+            .compact-gauge-item .cg-val { font-size: 0.78rem; font-weight: 700; color: var(--accent-color); font-family: monospace; }
 
             #workspace {
                 flex-direction: column;
-                min-height: 450px;
+                flex: 1;
+                min-height: 0;
             }
 
             #canvas-container {
-                min-height: 300px;
-                height: 50vh;
+                flex: 1;
+                min-height: 180px;
+                height: 100%;
             }
 
+            /* Ultra-compact supplementary plots on mobile */
             #side-plots-panel {
                 width: 100% !important;
                 flex-direction: row !important;
-                height: 220px;
+                height: 100px !important;
+                gap: 0.35rem;
+                padding: 0.35rem;
             }
 
             .plot-box {
                 flex: 1;
+                padding: 0.25rem;
+            }
+
+            .plot-title {
+                font-size: 0.72rem;
+                margin-bottom: 1px;
             }
         }
 
-        /* Smartphone Viewports (< 768px) */
-        @media (max-width: 768px) {
-            body {
-                height: auto;
-                min-height: 100vh;
-                min-height: 100dvh;
-                overflow-y: auto;
-            }
-
-            #sidebar {
-                max-height: none;
-                padding: 0.75rem;
-            }
-
-            #top-overview {
-                flex-direction: column;
-                height: auto;
-                gap: 0.5rem;
-            }
-
+        /* Smartphone Small Viewports (< 550px) */
+        @media (max-width: 550px) {
             #metrics-bar {
                 grid-template-columns: repeat(2, 1fr);
             }
 
-            #gauge-window {
-                width: 100% !important;
-                height: 110px;
+            #compact-gauges-mobile {
+                width: 90px;
+                padding: 0.2rem 0.3rem;
             }
-
-            #main-content {
-                padding: 0.6rem;
-                min-height: auto;
-            }
-
-            #workspace {
-                flex-direction: column;
-                min-height: auto;
-            }
-
-            #canvas-container {
-                min-height: 280px;
-                height: 45vh;
-            }
-
-            #side-plots-panel {
-                flex-direction: column !important;
-                height: auto;
-            }
-
-            .plot-box {
-                height: 180px;
-            }
-
-            .btn-group button {
-                padding: 0.7rem;
-                font-size: 0.82rem;
+            
+            .compact-gauge-item .cg-val {
+                font-size: 0.72rem;
             }
 
             #scrubber-container {
-                flex-direction: column;
-                align-items: stretch;
-                gap: 0.4rem;
+                padding: 0.3rem 0.5rem;
+            }
+
+            #scrubber-container span {
+                font-size: 0.72rem;
             }
         }
     </style>
 </head>
 <body>
 
+    <!-- Mobile Header Bar for Toggling Controls -->
+    <div id="mobile-header">
+        <h1>Ballistics Physics Lab</h1>
+        <button id="btn-toggle-sidebar">⚙️ Controls</button>
+    </div>
+
     <div id="sidebar">
-        <div>
+        <div class="sidebar-title-block">
             <h1>Ballistics Physics Lab</h1>
             <p class="subtitle">Empirical G7 Drag, Dynamic Atmosphere & Visualizer</p>
         </div>
@@ -442,7 +563,7 @@
         <div class="btn-group">
             <button id="btn-play">Play Animation</button>
             <button id="btn-save" class="secondary">Save Overlay</button>
-            <button id="btn-toggle-plots" class="secondary">Toggle Diagnostic Plots</button>
+            <button id="btn-toggle-plots" class="secondary">Diagnostic Plots</button>
             <button id="btn-clear" class="secondary">Clear Overlays</button>
         </div>
 
@@ -465,20 +586,20 @@
                     <div class="value" id="m-time">0.00 s</div>
                 </div>
                 <div class="metric-card">
-                    <div class="title">Speed of Sound</div>
+                    <div class="title">Speed Sound</div>
                     <div class="value" id="m-csound">340.3 m/s</div>
                 </div>
                 <div class="metric-card">
-                    <div class="title">Mach & <i>C</i><sub>d</sub>(<i>M</i>)</div>
+                    <div class="title">Mach & <i>C</i><sub>d</sub></div>
                     <div class="value" id="m-mach">M 2.35 (0.23)</div>
                 </div>
                 <div class="metric-card">
-                    <div class="title">Wind @ Altitude</div>
+                    <div class="title">Wind @ Alt</div>
                     <div class="value" id="m-wind-alt">0.0 m/s</div>
                 </div>
             </div>
 
-            <!-- Column Chart Gauges Window -->
+            <!-- Column Chart Gauges Window for Desktop -->
             <div id="gauge-window">
                 <div class="gauge-col-container">
                     <div class="gauge-title">Velocity</div>
@@ -495,6 +616,18 @@
                     </div>
                 </div>
             </div>
+
+            <!-- Compact Number Cards replacing diagrams on small screens -->
+            <div id="compact-gauges-mobile">
+                <div class="compact-gauge-item">
+                    <span class="cg-title">Velocity</span>
+                    <span class="cg-val" id="cg-val-v">800 m/s (100%)</span>
+                </div>
+                <div class="compact-gauge-item">
+                    <span class="cg-title">Energy</span>
+                    <span class="cg-val" id="cg-val-e">3.20 kJ (100%)</span>
+                </div>
+            </div>
         </div>
 
         <div id="workspace">
@@ -505,13 +638,13 @@
             <!-- Toggleable Real-Time Diagnostic Side Panel -->
             <div id="side-plots-panel">
                 <div class="plot-box">
-                    <div class="plot-title">Velocity vs Distance</div>
+                    <div class="plot-title"><i>v</i>(<i>t</i>) / <i>v</i>(<i>x</i>)</div>
                     <div class="plot-canvas-wrap">
                         <canvas id="canvas-v-dist"></canvas>
                     </div>
                 </div>
                 <div class="plot-box">
-                    <div class="plot-title">Kinetic Energy vs Distance</div>
+                    <div class="plot-title"><i>E</i>(<i>t</i>) / <i>E</i>(<i>x</i>)</div>
                     <div class="plot-canvas-wrap">
                         <canvas id="canvas-e-dist"></canvas>
                     </div>
@@ -520,13 +653,30 @@
         </div>
 
         <div id="scrubber-container">
-            <span>Flight Inspector:</span>
+            <span>Inspector:</span>
             <input type="range" id="scrubber" min="0" max="1000" value="1000" style="flex:1;">
-            <span id="scrubber-val" style="min-width: 65px; font-family: monospace;">0.00 s</span>
+            <span id="scrubber-val" style="min-width: 55px; font-family: monospace;">0.00 s</span>
         </div>
     </div>
 
     <script>
+        // Mobile Sidebar Toggle
+        const btnToggleSidebar = document.getElementById('btn-toggle-sidebar');
+        const sidebar = document.getElementById('sidebar');
+
+        btnToggleSidebar.addEventListener('click', () => {
+            sidebar.classList.toggle('open');
+            btnToggleSidebar.innerText = sidebar.classList.contains('open') ? '✕ Close' : '⚙️ Controls';
+        });
+
+        // Close sidebar on canvas touch/click in mobile view
+        document.getElementById('canvas-container').addEventListener('click', () => {
+            if (sidebar.classList.contains('open')) {
+                sidebar.classList.remove('open');
+                btnToggleSidebar.innerText = '⚙️ Controls';
+            }
+        });
+
         // Empirically defined G7 Drag Table
         const G7_TABLE = [
             { m: 0.00, cd: 0.125 },
@@ -552,7 +702,6 @@
             { m: 4.00, cd: 0.190 }
         ];
 
-        // Linear Interpolation for G7 Drag Coefficient
         function getG7TableCd(Mach) {
             if (Mach <= G7_TABLE[0].m) return G7_TABLE[0].cd;
             if (Mach >= G7_TABLE[G7_TABLE.length - 1].m) return G7_TABLE[G7_TABLE.length - 1].cd;
@@ -818,7 +967,7 @@
             document.getElementById('m-mach').innerText = `M ${curr.Mach.toFixed(2)} (${curr.Cd.toFixed(3)})`;
             document.getElementById('m-wind-alt').innerText = `${curr.wind_y.toFixed(1)} m/s`;
 
-            // Gauge Column Updates
+            // Desktop Gauge Column Updates
             const initialPt = simData.drag[0];
             const v0 = initialPt.v_abs;
             const E0 = initialPt.Ek;
@@ -831,6 +980,10 @@
 
             document.getElementById('gauge-fill-e').style.height = `${ePct}%`;
             document.getElementById('gauge-text-e').innerHTML = `${formatEnergy(curr.Ek)}<br>${ePct.toFixed(0)}%`;
+
+            // Compact Mobile Text Cards
+            document.getElementById('cg-val-v').innerText = `${Math.round(curr.v_abs)} m/s (${vPct.toFixed(0)}%)`;
+            document.getElementById('cg-val-e').innerText = `${formatEnergy(curr.Ek)} (${ePct.toFixed(0)}%)`;
         }
 
         function updateLegend() {
@@ -862,11 +1015,11 @@
             ctx.clearRect(0, 0, canvas.width, canvas.height);
 
             const isSmallScreen = window.innerWidth <= 768;
-            const paddingLeft = isSmallScreen ? 60 : 90;
-            const paddingBottom = isSmallScreen ? 50 : 75;
-            const paddingTop = isSmallScreen ? 25 : 40;
-            const paddingRight = isSmallScreen ? 25 : 40;
-            const fontSize = isSmallScreen ? 14 : 20;
+            const paddingLeft = isSmallScreen ? 45 : 75;
+            const paddingBottom = isSmallScreen ? 40 : 60;
+            const paddingTop = isSmallScreen ? 20 : 30;
+            const paddingRight = isSmallScreen ? 20 : 30;
+            const fontSize = isSmallScreen ? 12 : 16;
 
             let maxX = Math.max(...simData.drag.map(p => p.x));
             let maxY = Math.max(...simData.drag.map(p => p.y));
@@ -896,7 +1049,7 @@
 
             // Grid & Axes Labels
             ctx.strokeStyle = '#334155';
-            ctx.lineWidth = 1.5;
+            ctx.lineWidth = 1.2;
             ctx.beginPath();
             
             const gridSteps = 5;
@@ -916,14 +1069,14 @@
 
                 ctx.fillStyle = '#94a3b8';
                 ctx.font = `bold ${fontSize}px "Segoe UI", monospace`;
-                ctx.fillText(`${Math.round(gx)}m`, p1.sx - (fontSize * 0.8), canvas.height - paddingBottom + (fontSize * 1.3));
-                ctx.fillText(`${Math.round(gy)}m`, 8, p3.sy + (fontSize * 0.35));
+                ctx.fillText(`${Math.round(gx)}m`, p1.sx - (fontSize * 0.8), canvas.height - paddingBottom + (fontSize * 1.25));
+                ctx.fillText(`${Math.round(gy)}m`, 4, p3.sy + (fontSize * 0.35));
             }
             ctx.stroke();
 
             // Ground Line
             ctx.strokeStyle = '#475569';
-            ctx.lineWidth = 3;
+            ctx.lineWidth = 2.5;
             ctx.beginPath();
             let gStart = toScreen(0, 0);
             let gEnd = toScreen(maxX * 1.1, 0);
@@ -934,8 +1087,8 @@
             // Vacuum Reference Line
             if (document.getElementById('show-vacuum').checked && simData.vac.length > 0) {
                 ctx.strokeStyle = '#ef4444';
-                ctx.lineWidth = 2;
-                ctx.setLineDash([6, 6]);
+                ctx.lineWidth = 1.5;
+                ctx.setLineDash([5, 5]);
                 ctx.beginPath();
                 simData.vac.forEach((pt, i) => {
                     let sp = toScreen(pt.x, pt.y);
@@ -950,7 +1103,7 @@
             overlays.forEach(ov => {
                 ctx.strokeStyle = ov.color;
                 ctx.globalAlpha = 0.3;
-                ctx.lineWidth = 2.5;
+                ctx.lineWidth = 2;
                 ctx.setLineDash([4, 4]);
                 ctx.beginPath();
                 ov.drag.forEach((pt, i) => {
@@ -962,7 +1115,7 @@
                 ctx.setLineDash([]);
 
                 ctx.globalAlpha = 0.9;
-                ctx.lineWidth = 3;
+                ctx.lineWidth = 2.5;
                 ctx.beginPath();
                 let started = false;
                 for (let i = 0; i < ov.drag.length; i++) {
@@ -977,7 +1130,7 @@
                 const ovSp = toScreen(ovPt.x, ovPt.y);
                 ctx.fillStyle = ov.color;
                 ctx.beginPath();
-                ctx.arc(ovSp.sx, ovSp.sy, 6, 0, 2 * Math.PI);
+                ctx.arc(ovSp.sx, ovSp.sy, 5, 0, 2 * Math.PI);
                 ctx.fill();
             });
 
@@ -987,7 +1140,7 @@
                 let p1 = toScreen(simData.drag[i-1].x, simData.drag[i-1].y);
                 let p2 = toScreen(simData.drag[i].x, simData.drag[i].y);
                 ctx.strokeStyle = getMachColor(simData.drag[i].Mach);
-                ctx.lineWidth = isSmallScreen ? 4 : 5;
+                ctx.lineWidth = isSmallScreen ? 3.5 : 4.5;
                 ctx.beginPath();
                 ctx.moveTo(p1.sx, p1.sy);
                 ctx.lineTo(p2.sx, p2.sy);
@@ -995,7 +1148,7 @@
             }
 
             ctx.globalAlpha = 1.0;
-            ctx.lineWidth = isSmallScreen ? 5 : 7;
+            ctx.lineWidth = isSmallScreen ? 4.5 : 6;
             for (let i = 1; i < simData.drag.length; i++) {
                 if (simData.drag[i].t > currentTime) break;
                 let p1 = toScreen(simData.drag[i-1].x, simData.drag[i-1].y);
@@ -1013,10 +1166,10 @@
 
             ctx.fillStyle = '#ffffff';
             ctx.beginPath();
-            ctx.arc(sp.sx, sp.sy, isSmallScreen ? 6 : 8, 0, 2 * Math.PI);
+            ctx.arc(sp.sx, sp.sy, isSmallScreen ? 5 : 7, 0, 2 * Math.PI);
             ctx.fill();
             ctx.strokeStyle = getMachColor(curr.Mach);
-            ctx.lineWidth = 3;
+            ctx.lineWidth = 2.5;
             ctx.stroke();
 
             document.getElementById('scrubber-val').innerText = `${currentTime.toFixed(2)} s`;
@@ -1025,7 +1178,7 @@
                 const vScale = 0.12;
                 const vSp = toScreen(curr.x + curr.vx * vScale, curr.y + curr.vy * vScale);
                 ctx.strokeStyle = '#22c55e';
-                ctx.lineWidth = 3;
+                ctx.lineWidth = 2.5;
                 ctx.beginPath();
                 ctx.moveTo(sp.sx, sp.sy);
                 ctx.lineTo(vSp.sx, vSp.sy);
@@ -1039,7 +1192,7 @@
                     const fSp = toScreen(curr.x + fx, curr.y + fy);
 
                     ctx.strokeStyle = '#f59e0b';
-                    ctx.lineWidth = 3;
+                    ctx.lineWidth = 2.5;
                     ctx.beginPath();
                     ctx.moveTo(sp.sx, sp.sy);
                     ctx.lineTo(fSp.sx, fSp.sy);
@@ -1062,11 +1215,11 @@
             cCtx.clearRect(0, 0, cCanvas.width, cCanvas.height);
 
             const isSmallScreen = window.innerWidth <= 768;
-            const padL = isSmallScreen ? 50 : 70;
-            const padB = isSmallScreen ? 25 : 35;
-            const padT = isSmallScreen ? 15 : 20;
-            const padR = isSmallScreen ? 15 : 20;
-            const fontSz = isSmallScreen ? 12 : 16;
+            const padL = isSmallScreen ? 35 : 55;
+            const padB = isSmallScreen ? 18 : 25;
+            const padT = isSmallScreen ? 10 : 15;
+            const padR = isSmallScreen ? 10 : 15;
+            const fontSz = isSmallScreen ? 10 : 13;
 
             let maxX = Math.max(...simData.drag.map(xAccessor));
             let maxY = Math.max(...simData.drag.map(yAccessor));
@@ -1094,14 +1247,14 @@
                 cCtx.fillStyle = '#94a3b8';
                 cCtx.font = `bold ${fontSz}px "Segoe UI", monospace`;
                 const label = unitLabel === 'Energy' ? formatEnergy(gy) : `${Math.round(gy)}`;
-                cCtx.fillText(label, 4, sy + 4);
+                cCtx.fillText(label, 2, sy + 3);
             }
             cCtx.stroke();
 
             // Overlay curves
             overlays.forEach(ov => {
                 cCtx.strokeStyle = ov.color;
-                cCtx.lineWidth = 2;
+                cCtx.lineWidth = 1.5;
                 cCtx.globalAlpha = 0.5;
                 cCtx.beginPath();
                 ov.drag.forEach((pt, i) => {
@@ -1115,7 +1268,7 @@
 
             // Active curve
             cCtx.strokeStyle = color;
-            cCtx.lineWidth = 3;
+            cCtx.lineWidth = 2.5;
             cCtx.globalAlpha = 1.0;
             cCtx.beginPath();
             simData.drag.forEach((pt, i) => {
@@ -1130,8 +1283,8 @@
             const curr = getTrajectoryPointAtTime(simData.drag, currentTime);
             let currSx = padL + xAccessor(curr) * scaleX;
             cCtx.strokeStyle = '#ffffff';
-            cCtx.lineWidth = 2;
-            cCtx.setLineDash([4, 4]);
+            cCtx.lineWidth = 1.5;
+            cCtx.setLineDash([3, 3]);
             cCtx.beginPath();
             cCtx.moveTo(currSx, padT);
             cCtx.lineTo(currSx, cCanvas.height - padB);
