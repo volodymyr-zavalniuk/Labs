@@ -1,0 +1,1841 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mil-Relation Reticle & Distance Trainer | Оптичний Угломір</title>
+    <style>
+        :root {
+            --bg-color: #0b0f19;
+            --panel-bg: #151c2c;
+            --card-bg: #1e293b;
+            --accent-cyan: #38bdf8;
+            --accent-amber: #f59e0b;
+            --text-main: #f8fafc;
+            --text-muted: #94a3b8;
+            --border-color: #334155;
+            --success-color: #22c55e;
+            --danger-color: #ef4444;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            user-select: none;
+        }
+
+        /* Fluid Root Font & Resolution Scaling */
+        html {
+            font-size: clamp(12px, 0.85vw + 0.4vh, 16px);
+        }
+
+        body {
+            background-color: var(--bg-color);
+            color: var(--text-main);
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+
+        /* Top Bar Header */
+        header {
+            min-height: 48px;
+            height: auto;
+            background-color: var(--panel-bg);
+            border-bottom: 1px solid var(--border-color);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 6px 14px;
+            flex-shrink: 0;
+            gap: 10px;
+            z-index: 10;
+        }
+
+        .header-title {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .header-title h1 {
+            font-size: 1rem;
+            font-weight: 700;
+            color: var(--accent-cyan);
+            letter-spacing: 0.03em;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .header-title span {
+            font-size: 0.72rem;
+            color: var(--text-muted);
+            font-weight: 400;
+        }
+
+        .header-controls {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            flex-wrap: wrap;
+        }
+
+        .btn-group {
+            display: flex;
+            background-color: var(--card-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 6px;
+            padding: 2px;
+            gap: 2px;
+        }
+
+        .btn-toggle {
+            background: transparent;
+            border: none;
+            color: var(--text-muted);
+            padding: 4px 10px;
+            font-size: 0.76rem;
+            font-weight: 600;
+            border-radius: 4px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .btn-toggle.active {
+            background-color: var(--accent-cyan);
+            color: #0f172a;
+        }
+
+        .btn-action {
+            background: var(--card-bg);
+            border: 1px solid var(--border-color);
+            color: var(--text-main);
+            font-weight: 600;
+            padding: 5px 10px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 0.76rem;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            transition: all 0.2s;
+        }
+
+        .btn-action:hover {
+            background: #334155;
+            border-color: var(--accent-cyan);
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #0284c7, #2563eb);
+            color: #ffffff;
+            border: none;
+            box-shadow: 0 0 10px rgba(56, 189, 248, 0.25);
+        }
+
+        .btn-primary:hover {
+            background: linear-gradient(135deg, #0369a1, #1d4ed8);
+        }
+
+        .score-badge {
+            background: rgba(34, 197, 94, 0.15);
+            border: 1px solid var(--success-color);
+            color: var(--success-color);
+            padding: 4px 8px;
+            border-radius: 6px;
+            font-weight: 700;
+            font-size: 0.78rem;
+            font-family: monospace;
+            display: flex;
+            align-items: center;
+            gap: 4px;
+        }
+
+        /* Main Workspace Grid Layout */
+        #app-grid {
+            flex: 1;
+            display: grid;
+            grid-template-columns: 1fr 320px;
+            gap: 8px;
+            padding: 8px;
+            min-height: 0;
+            position: relative;
+        }
+
+        /* Medium-to-Small Desktop Resolution Adjustments (e.g. 1366x768, HD) */
+        @media (max-width: 1366px) {
+            #app-grid {
+                grid-template-columns: 1fr 290px;
+                gap: 6px;
+                padding: 6px;
+            }
+            .side-panel {
+                padding: 8px;
+                gap: 8px;
+            }
+            .panel-card {
+                padding: 8px;
+            }
+        }
+
+        @media (max-width: 1100px) {
+            #app-grid {
+                grid-template-columns: 1fr 260px;
+            }
+            .header-title h1 {
+                font-size: 0.9rem;
+            }
+            .btn-toggle, .btn-action {
+                font-size: 0.72rem;
+                padding: 4px 8px;
+            }
+        }
+
+        @media (max-height: 768px) and (min-width: 921px) {
+            header {
+                min-height: 42px;
+                padding: 4px 10px;
+            }
+            #app-grid {
+                padding: 4px;
+                gap: 6px;
+            }
+            .side-panel {
+                gap: 6px;
+                padding: 6px;
+            }
+            .panel-card {
+                padding: 6px 8px;
+            }
+            .btn-option {
+                padding: 6px 8px;
+                font-size: 0.8rem;
+            }
+        }
+
+        @media (max-width: 920px) {
+            body {
+                height: auto;
+                min-height: 100vh;
+                overflow-x: hidden;
+                overflow-y: auto;
+            }
+            #app-grid {
+                display: flex;
+                flex-direction: column;
+                height: auto;
+                min-height: calc(100vh - 50px);
+                overflow: visible;
+            }
+            .scope-container {
+                height: 52vh;
+                min-height: 300px;
+                flex-shrink: 0;
+            }
+            .side-panel {
+                height: auto;
+                overflow-y: visible;
+                flex: none;
+            }
+        }
+
+        @media (max-width: 600px) {
+            header {
+                padding: 6px 10px;
+                gap: 6px;
+            }
+            .header-title h1 {
+                font-size: 0.85rem;
+            }
+            .header-title span {
+                font-size: 0.65rem;
+            }
+            .header-controls {
+                gap: 4px;
+                justify-content: flex-start;
+                width: 100%;
+            }
+            .btn-toggle {
+                padding: 3px 6px;
+                font-size: 0.7rem;
+            }
+            .btn-action {
+                padding: 4px 8px;
+                font-size: 0.72rem;
+            }
+            .score-badge {
+                font-size: 0.72rem;
+                padding: 2px 6px;
+            }
+            .pan-controls {
+                bottom: 8px;
+                left: 8px;
+                padding: 4px;
+                grid-template-columns: repeat(3, 26px);
+                grid-template-rows: repeat(3, 26px);
+                gap: 2px;
+            }
+            .btn-pan {
+                font-size: 0.72rem;
+            }
+            .modal-card {
+                width: 96%;
+                max-height: 92vh;
+                border-radius: 8px;
+            }
+            .modal-header {
+                padding: 8px 12px;
+            }
+            .modal-body {
+                padding: 10px;
+                font-size: 0.8rem;
+            }
+        }
+
+        /* Scope Canvas Viewport Area */
+        .scope-container {
+            background-color: var(--panel-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            position: relative;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+
+        .viewport-header {
+            height: 32px;
+            background: rgba(15, 23, 42, 0.85);
+            border-bottom: 1px solid var(--border-color);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0 12px;
+            font-size: 0.75rem;
+            color: var(--text-muted);
+            font-weight: 600;
+            letter-spacing: 0.05em;
+            text-transform: uppercase;
+        }
+
+        .viewport-header span.highlight {
+            color: var(--accent-cyan);
+            font-family: monospace;
+        }
+
+        .canvas-wrap {
+            flex: 1;
+            position: relative;
+            width: 100%;
+            height: 100%;
+            background: #000;
+            cursor: grab;
+            touch-action: none;
+        }
+
+        .canvas-wrap:active {
+            cursor: grabbing;
+        }
+
+        canvas {
+            display: block;
+            width: 100%;
+            height: 100%;
+        }
+
+        /* D-Pad Floating Sight Fine Controls */
+        .pan-controls {
+            position: absolute;
+            bottom: 14px;
+            left: 14px;
+            background: rgba(21, 28, 44, 0.88);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            padding: 6px;
+            display: grid;
+            grid-template-columns: repeat(3, 32px);
+            grid-template-rows: repeat(3, 32px);
+            gap: 4px;
+            backdrop-filter: blur(4px);
+            z-index: 5;
+        }
+
+        .btn-pan {
+            background: var(--card-bg);
+            border: 1px solid var(--border-color);
+            color: var(--text-main);
+            border-radius: 4px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.85rem;
+            cursor: pointer;
+            transition: all 0.15s;
+        }
+
+        .btn-pan:hover {
+            background: #334155;
+            color: var(--accent-cyan);
+        }
+
+        /* Right Side Panel / Quiz & Target Info */
+        .side-panel {
+            background-color: var(--panel-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            display: flex;
+            flex-direction: column;
+            overflow-y: auto;
+            padding: 12px;
+            gap: 12px;
+        }
+
+        .panel-card {
+            background-color: var(--card-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 6px;
+            padding: 10px 12px;
+        }
+
+        .panel-card-title {
+            font-size: 0.72rem;
+            font-weight: 700;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            margin-bottom: 8px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        /* Requirement 6: Clean Vertical Target Selector Column */
+        .target-selector-column {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+        }
+
+        .target-card-item {
+            background: rgba(15, 23, 42, 0.6);
+            border: 1px solid var(--border-color);
+            padding: 8px 10px;
+            border-radius: 6px;
+            font-size: 0.8rem;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .target-card-item:hover {
+            background: #334155;
+            border-color: var(--accent-cyan);
+        }
+
+        .target-card-item.active {
+            border-color: var(--accent-cyan);
+            background: rgba(56, 189, 248, 0.15);
+            color: var(--accent-cyan);
+            font-weight: 700;
+        }
+
+        .target-item-left {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .target-tag {
+            font-family: monospace;
+            font-size: 0.72rem;
+            background: rgba(51, 65, 85, 0.6);
+            padding: 2px 6px;
+            border-radius: 4px;
+            color: var(--text-muted);
+        }
+
+        .target-card-item.active .target-tag {
+            background: rgba(56, 189, 248, 0.3);
+            color: var(--accent-cyan);
+        }
+
+        .given-box {
+            background: rgba(56, 189, 248, 0.08);
+            border-left: 3px solid var(--accent-cyan);
+            padding: 8px 10px;
+            border-radius: 4px;
+            font-size: 0.85rem;
+            margin-top: 6px;
+        }
+
+        .given-box strong {
+            color: var(--accent-cyan);
+            font-size: 1.05rem;
+            font-family: monospace;
+        }
+
+        /* Quiz Options Styling */
+        .quiz-options {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+            margin-top: 6px;
+        }
+
+        .btn-option {
+            background-color: rgba(15, 23, 42, 0.6);
+            border: 1px solid var(--border-color);
+            color: var(--text-main);
+            padding: 10px 12px;
+            border-radius: 6px;
+            font-size: 0.9rem;
+            font-weight: 600;
+            cursor: pointer;
+            text-align: left;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            transition: all 0.2s;
+        }
+
+        .btn-option:hover:not(:disabled) {
+            background-color: #334155;
+            border-color: var(--accent-cyan);
+        }
+
+        .btn-option.correct {
+            background-color: rgba(34, 197, 94, 0.2) !important;
+            border-color: var(--success-color) !important;
+            color: var(--success-color) !important;
+            font-weight: 700;
+        }
+
+        .btn-option.wrong {
+            background-color: rgba(239, 68, 68, 0.2) !important;
+            border-color: var(--danger-color) !important;
+            color: var(--danger-color) !important;
+        }
+
+        .solution-box {
+            background: rgba(15, 23, 42, 0.95);
+            border: 1px solid var(--border-color);
+            border-radius: 6px;
+            padding: 10px;
+            font-size: 0.8rem;
+            line-height: 1.4;
+            display: none;
+            margin-top: 8px;
+        }
+
+        .solution-box.visible {
+            display: block;
+            animation: fadeIn 0.3s ease-in;
+        }
+
+        .solution-box h4 {
+            color: var(--accent-amber);
+            margin-bottom: 4px;
+            font-size: 0.82rem;
+        }
+
+        .formula-highlight {
+            font-family: monospace;
+            background: rgba(245, 158, 11, 0.15);
+            padding: 2px 6px;
+            border-radius: 4px;
+            color: var(--accent-amber);
+            font-weight: 700;
+        }
+
+        /* Theory Modal Dialog */
+        .modal-backdrop {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            background: rgba(11, 15, 25, 0.85);
+            backdrop-filter: blur(6px);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 100;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.25s ease;
+        }
+
+        .modal-backdrop.open {
+            opacity: 1;
+            pointer-events: auto;
+        }
+
+        .modal-card {
+            background: var(--panel-bg);
+            border: 1px solid var(--border-color);
+            width: 90%;
+            max-width: 780px;
+            max-height: 85vh;
+            border-radius: 10px;
+            display: flex;
+            flex-direction: column;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.6);
+            overflow: hidden;
+        }
+
+        .modal-header {
+            padding: 12px 18px;
+            background: var(--card-bg);
+            border-bottom: 1px solid var(--border-color);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .modal-header h2 {
+            font-size: 1.05rem;
+            color: var(--accent-cyan);
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .btn-close {
+            background: transparent;
+            border: none;
+            color: var(--text-muted);
+            font-size: 1.4rem;
+            cursor: pointer;
+            line-height: 1;
+        }
+
+        .btn-close:hover {
+            color: var(--text-main);
+        }
+
+        .modal-nav {
+            display: flex;
+            background: rgba(15, 23, 42, 0.6);
+            border-bottom: 1px solid var(--border-color);
+            padding: 0 12px;
+            gap: 4px;
+            overflow-x: auto;
+        }
+
+        .tab-btn {
+            background: transparent;
+            border: none;
+            color: var(--text-muted);
+            padding: 10px 14px;
+            font-size: 0.82rem;
+            font-weight: 600;
+            cursor: pointer;
+            border-bottom: 2px solid transparent;
+            transition: all 0.2s;
+            white-space: nowrap;
+        }
+
+        .tab-btn.active {
+            color: var(--accent-cyan);
+            border-bottom-color: var(--accent-cyan);
+        }
+
+        .modal-body {
+            padding: 18px;
+            overflow-y: auto;
+            font-size: 0.88rem;
+            line-height: 1.5;
+            color: var(--text-main);
+        }
+
+        .theory-tab-content {
+            display: none;
+        }
+
+        .theory-tab-content.active {
+            display: block;
+        }
+
+        .theory-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 12px 0;
+            font-size: 0.82rem;
+        }
+
+        .theory-table th, .theory-table td {
+            border: 1px solid var(--border-color);
+            padding: 8px 10px;
+            text-align: left;
+        }
+
+        .theory-table th {
+            background: var(--card-bg);
+            color: var(--accent-cyan);
+        }
+
+        .code-box {
+            background: #020617;
+            border: 1px solid var(--border-color);
+            padding: 10px;
+            border-radius: 6px;
+            font-family: monospace;
+            color: var(--accent-amber);
+            margin: 10px 0;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(4px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Top Header Bar -->
+    <header>
+        <div class="header-title">
+            <h1 id="ui-title">MIL-RELATION RETICLE <span>/ Оптичний Угломір</span></h1>
+            <span id="ui-subtitle">Tactical Distance & Size Learning Simulator</span>
+        </div>
+
+        <div class="header-controls">
+            <!-- Requirement 1: Mode Switcher -->
+            <div class="btn-group">
+                <button class="btn-toggle active" id="btn-mode-dist" onclick="setMode('DISTANCE')">Find D (Відстань)</button>
+                <button class="btn-toggle" id="btn-mode-size" onclick="setMode('SIZE')">Find B (Розмір)</button>
+            </div>
+
+            <!-- Magnification / Zoom -->
+            <div class="btn-group">
+                <button class="btn-toggle active" onclick="setZoom(1)">1×</button>
+                <button class="btn-toggle" onclick="setZoom(2)">2×</button>
+                <button class="btn-toggle" onclick="setZoom(4)">4×</button>
+                <button class="btn-toggle" onclick="setZoom(8)">8×</button>
+            </div>
+
+            <!-- Requirement 7: Language Switcher -->
+            <div class="btn-group">
+                <button class="btn-toggle active" id="btn-lang-ua" onclick="setLanguage('UA')">UA</button>
+                <button class="btn-toggle" id="btn-lang-en" onclick="setLanguage('EN')">EN</button>
+            </div>
+
+            <!-- Score Badge -->
+            <div class="score-badge" id="score-badge">
+                ★ <span id="score-val">0 / 0 (0%)</span>
+            </div>
+
+            <!-- Action Buttons -->
+            <button class="btn-action btn-primary" onclick="generateNewScenario()">
+                🔄 <span id="ui-new-task">New Task</span>
+            </button>
+
+            <button class="btn-action" onclick="toggleTheoryModal(true)">
+                📖 <span id="ui-theory-btn">Theory</span>
+            </button>
+        </div>
+    </header>
+
+    <!-- Main Workspace Grid -->
+    <div id="app-grid">
+        <!-- Optical Viewport Area -->
+        <div class="scope-container">
+            <div class="viewport-header">
+                <span>Field of View • <span class="highlight" id="lbl-zoom">1× MAG</span></span>
+                <span>Reticle: <span class="highlight">RED MIL-DOT (1 mrad)</span></span>
+            </div>
+            <div class="canvas-wrap" id="canvas-wrap">
+                <canvas id="scope-canvas"></canvas>
+
+                <!-- Floating D-Pad Controls -->
+                <div class="pan-controls">
+                    <div></div>
+                    <button class="btn-pan" onclick="panSight(0, -20)" title="Pan Up">▲</button>
+                    <div></div>
+                    <button class="btn-pan" onclick="panSight(-20, 0)" title="Pan Left">◄</button>
+                    <button class="btn-pan" onclick="resetSightPan()" title="Center Sight">⟲</button>
+                    <button class="btn-pan" onclick="panSight(20, 0)" title="Pan Right">►</button>
+                    <div></div>
+                    <button class="btn-pan" onclick="panSight(0, 20)" title="Pan Down">▼</button>
+                    <div></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Right Side Panel -->
+        <div class="side-panel">
+            <!-- Target Selection Card (Vertical Column) -->
+            <div class="panel-card">
+                <div class="panel-card-title">
+                    <span id="ui-targets-in-view">Targets in Sight</span>
+                    <span id="lbl-target-count" style="color:var(--accent-cyan)">5 Objects</span>
+                </div>
+                <div class="target-selector-column" id="target-chips-container">
+                    <!-- Dynamic vertical target cards -->
+                </div>
+            </div>
+
+            <!-- Selected Target Task Info Card -->
+            <div class="panel-card" style="border-top: 3px solid var(--accent-cyan);">
+                <div class="panel-card-title">
+                    <span id="ui-selected-target">Selected Target</span>
+                    <span id="lbl-target-dist-tag" style="color:var(--accent-amber); font-family:monospace;">Target #1</span>
+                </div>
+
+                <div style="display:flex; align-items:center; gap:10px; margin-bottom:6px;">
+                    <div id="target-icon-preview" style="font-size:1.8rem;">🎯</div>
+                    <div>
+                        <h3 id="lbl-target-name" style="font-size:0.95rem; color:var(--text-main);">Tank T-72</h3>
+                        <div id="lbl-target-dims" style="font-size:0.75rem; color:var(--text-muted);">Height: 2.8m | Width: 3.5m</div>
+                    </div>
+                </div>
+
+                <div class="given-box">
+                    <div id="lbl-given-label" style="font-size:0.74rem; color:var(--text-muted);">Known Dimension:</div>
+                    <div id="lbl-given-value">Height B = <strong>2.8 m</strong></div>
+                </div>
+            </div>
+
+            <!-- Measurement Instructions & Quiz Options Card -->
+            <div class="panel-card" style="flex:1; display:flex; flex-direction:column;">
+                <div class="panel-card-title">
+                    <span id="ui-measurement-task">Measurement Task</span>
+                </div>
+                <p id="lbl-task-instruction" style="font-size:0.78rem; color:var(--text-muted); margin-bottom:8px;">
+                    Measure angular height θ using red reticle ticks, then pick the correct answer:
+                </p>
+
+                <!-- 5 Distractor Options -->
+                <div class="quiz-options" id="quiz-options-container">
+                    <!-- Dynamic buttons -->
+                </div>
+
+                <!-- Solution Breakdown -->
+                <div class="solution-box" id="solution-box">
+                    <h4 id="ui-solution-title">Calculated Solution:</h4>
+                    <div id="solution-text">
+                        <!-- Dynamic solution breakdown -->
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Requirement 7: 100% Bilingual Theory & Reference Modal -->
+    <div class="modal-backdrop" id="theory-modal">
+        <div class="modal-card">
+            <div class="modal-header">
+                <h2>📖 <span id="ui-modal-title">Optical Reticle & Mil Formula Theory</span></h2>
+                <button class="btn-close" onclick="toggleTheoryModal(false)">&times;</button>
+            </div>
+
+            <div class="modal-nav">
+                <button class="tab-btn active" id="tab-btn-formula" onclick="switchTheoryTab('tab-formula')">Formulas & Principles</button>
+                <button class="tab-btn" id="tab-btn-standards" onclick="switchTheoryTab('tab-standards')">Angular Standards</button>
+                <button class="tab-btn" id="tab-btn-targets" onclick="switchTheoryTab('tab-targets')">Target Dimensions</button>
+                <button class="tab-btn" id="tab-btn-example" onclick="switchTheoryTab('tab-example')">Practical Example</button>
+            </div>
+
+            <div class="modal-body" id="modal-body-content">
+                <!-- Tab 1: Formulas -->
+                <div class="theory-tab-content active" id="tab-formula">
+                    <h3 style="color:var(--accent-cyan); margin-bottom:6px;" id="th-f-title">Формула Тисячної (Mil-Relation Formula)</h3>
+                    <p id="th-f-desc">Тысячная (мілірадіан, mrad) — це кутова величина, що дорівнює 1/1000 радіана. На відстані 1000 метрів дуга розміром 1 мілірадіан відповідає лінійній довжині 1 метр.</p>
+                    
+                    <div class="code-box">
+                        B = (D × θ) / 1000<br>
+                        D = (B × 1000) / θ<br>
+                        θ = (B × 1000) / D
+                    </div>
+                    
+                    <ul id="th-f-list">
+                        <li><strong>B (Розмір / Linear Size)</strong> — лінійний розмір цілі в метрах (висота або ширина).</li>
+                        <li><strong>D (Відстань / Distance)</strong> — відстань до цілі в метрах.</li>
+                        <li><strong>θ (Кут / Angular Size)</strong> — кутовий розмір цілі в тисячних (милах, mrad).</li>
+                    </ul>
+                </div>
+
+                <!-- Tab 2: Standards -->
+                <div class="theory-tab-content" id="tab-standards">
+                    <h3 style="color:var(--accent-cyan); margin-bottom:6px;" id="th-s-title">Порівняння кутових систем світу</h3>
+                    <p id="th-s-desc">У військовій справі та оптичних приладах використовуються 3 основні стандарти поділу повного кола (360°):</p>
+                    
+                    <table class="theory-table" id="th-s-table">
+                        <!-- Table rendered via script -->
+                    </table>
+                    <p style="font-size:0.8rem; color:var(--text-muted);" id="th-s-note">При використанні приладів з різними сітками враховуйте коефіцієнт перерахунку для підвищення точності.</p>
+                </div>
+
+                <!-- Tab 3: Target Dimensions -->
+                <div class="theory-tab-content" id="tab-targets">
+                    <h3 style="color:var(--accent-cyan); margin-bottom:6px;" id="th-t-title">Типові умовні розміри об'єктів (Reference Targets)</h3>
+                    <table class="theory-table" id="th-t-table">
+                        <!-- Table rendered via script -->
+                    </table>
+                </div>
+
+                <!-- Tab 4: Practical Example -->
+                <div class="theory-tab-content" id="tab-example">
+                    <h3 style="color:var(--accent-cyan); margin-bottom:6px;" id="th-e-title">Практичний приклад вимірювання</h3>
+                    <div id="th-e-content">
+                        <!-- Content rendered via script -->
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Requirement 7: 100% Complete Bilingual Engine (UA / EN)
+        const I18N = {
+            UA: {
+                title: "MIL-RELATION RETICLE",
+                subtitle: "Оптичний Угломір та Формула Тисячної",
+                modeDist: "Find D (Відстань)",
+                modeSize: "Find B (Розмір)",
+                newTask: "Нове завдання",
+                theoryBtn: "Теорія / Довідка",
+                targetsInView: "Цілі у полі зору",
+                selectedTarget: "Обрана ціль",
+                measurementTask: "Завдання вимірювання",
+                modalTitle: "Оптична сітка та Формула тисячної",
+                taskInstrDist: "Виміряйте кутову висоту θ по сітці (у милах) і обчисліть відстань D:",
+                taskInstrSize: "Виміряйте кутову висоту θ по сітці (у милах) і обчисліть лінійний розмір B:",
+                givenDistLabel: "Відома відстань D:",
+                givenSizeLabel: "Відомий лінійний розмір B:",
+                solTitle: "Покроковий розрахунок:",
+                correctMsg: "Вірно! +1 балл",
+                wrongMsg: "Невірно! Вірна відповідь відмічена зеленим.",
+                tabFormula: "Формули та Принципи",
+                tabStandards: "Кутові Стандарти",
+                tabTargets: "Розміри Цілей",
+                tabExample: "Практичний Приклад",
+                thFormulaTitle: "Формула Тисячної (Mil-Relation Formula)",
+                thFormulaDesc: "Тысячная (мілірадіан, mrad) — це кутова величина, що дорівнює 1/1000 радіана. На відстані 1000 метрів дуга розміром 1 мілірадіан відповідає лінійній довжині 1 метр.",
+                thFormulaList: `
+                    <li><strong>B (Розмір / Linear Size)</strong> — лінійний розмір цілі в метрах (висота або ширина).</li>
+                    <li><strong>D (Відстань / Distance)</strong> — відстань до цілі в метрах.</li>
+                    <li><strong>θ (Кут / Angular Size)</strong> — кутовий розмір цілі в тисячних (милах, mrad).</li>
+                `,
+                thStandardsTitle: "Порівняння кутових систем світу",
+                thStandardsDesc: "У військовій справі та оптичних приладах використовуються 3 основні стандарти поділу повного кола (360°):",
+                thStandardsTable: `
+                    <thead>
+                        <tr>
+                            <th>Стандарт / Країна</th>
+                            <th>Поділ кола</th>
+                            <th>Цінність 1 одиниці</th>
+                            <th>Співвідношення з мрад</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td><strong>NATO Mil</strong></td>
+                            <td>6400 mil</td>
+                            <td>0.05625°</td>
+                            <td>1 NATO mil ≈ 0.982 mrad</td>
+                        </tr>
+                        <tr>
+                            <td><strong>USSR / Пострадянська тисячна</strong></td>
+                            <td>6000 тисячних</td>
+                            <td>0.06000°</td>
+                            <td>1 тисячна ≈ 1.047 mrad</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Swedish Streck</strong></td>
+                            <td>6300 streck</td>
+                            <td>0.05714°</td>
+                            <td>1 streck ≈ 0.997 mrad</td>
+                        </tr>
+                    </tbody>
+                `,
+                thStandardsNote: "При використанні приладів з різними сітками враховуйте коефіцієнт перерахунку для підвищення точності.",
+                thTargetsTitle: "Типові умовні розміри об'єктів (Reference Targets)",
+                thTargetsTable: `
+                    <thead>
+                        <tr>
+                            <th>Тип об'єкта</th>
+                            <th>Висота (B_h)</th>
+                            <th>Ширина / Довжина (B_w)</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td>🚶 <strong>Піхотинець (людина)</strong></td>
+                            <td>1.7 м</td>
+                            <td>0.5 м</td>
+                        </tr>
+                        <tr>
+                            <td>🛡️ <strong>Танк (Т-72 / Т-64 / M1 Abrams)</strong></td>
+                            <td>2.8 м</td>
+                            <td>3.5 м (ширина)</td>
+                        </tr>
+                        <tr>
+                            <td>🚚 <strong>Вантажний автомобіль (КаМАЗ / Урал)</strong></td>
+                            <td>3.2 м</td>
+                            <td>6.5 м (довжина)</td>
+                        </tr>
+                        <tr>
+                            <td>🏢 <strong>Поверх будівлі (1 поверх)</strong></td>
+                            <td>3.0 м</td>
+                            <td>—</td>
+                        </tr>
+                        <tr>
+                            <td>🏢 <strong>Будинок 3 поверхи</strong></td>
+                            <td>9.0 м</td>
+                            <td>12.0 м</td>
+                        </tr>
+                    </tbody>
+                `,
+                thExampleTitle: "Практичний приклад вимірювання",
+                thExampleContent: `
+                    <p><strong>Задача:</strong> У полі зору прицілу спостерігається танк заввишки 2.8 м. За допомогою сітки прицілу (MIL-Dot) визначено, що висота танка займає точно 3.5 поділки (3.5 mil).</p>
+                    <div class="code-box">
+                        Відомо: B = 2.8 м, θ = 3.5 mil<br><br>
+                        Обчислення відстані D:<br>
+                        D = (B × 1000) / θ<br>
+                        D = (2.8 × 1000) / 3.5 = 2800 / 3.5 = 800 метрів.
+                    </div>
+                    <p>Отже, відстань до танка становить <strong>800 метрів</strong>.</p>
+                `
+            },
+            EN: {
+                title: "MIL-RELATION RETICLE",
+                subtitle: "Optical Sight & Mil-Formula Simulator",
+                modeDist: "Find Distance (D)",
+                modeSize: "Find Size (B)",
+                newTask: "New Scenario",
+                theoryBtn: "Theory & Help",
+                targetsInView: "Targets in Sight",
+                selectedTarget: "Selected Target",
+                measurementTask: "Measurement Task",
+                modalTitle: "Optical Reticle & Mil Formula Theory",
+                taskInstrDist: "Measure angular height θ using red reticle (mils) and pick correct distance D:",
+                taskInstrSize: "Measure angular height θ using red reticle (mils) and pick correct linear size B:",
+                givenDistLabel: "Known Distance D:",
+                givenSizeLabel: "Known Real Height B:",
+                solTitle: "Step-by-step Calculation:",
+                correctMsg: "Correct! +1 Point",
+                wrongMsg: "Incorrect! Correct answer highlighted in green.",
+                tabFormula: "Formulas & Principles",
+                tabStandards: "Angular Standards",
+                tabTargets: "Target Dimensions",
+                tabExample: "Practical Example",
+                thFormulaTitle: "Mil-Relation Formula (Milliradian System)",
+                thFormulaDesc: "A milliradian (mrad / mil) is an angular measurement equal to 1/1000 of a radian. At a range of 1000 meters, an angle of 1 mil spans exactly 1 meter.",
+                thFormulaList: `
+                    <li><strong>B (Linear Size)</strong> — Target dimension in meters (height or width).</li>
+                    <li><strong>D (Distance)</strong> — Range to target in meters.</li>
+                    <li><strong>θ (Angular Size)</strong> — Subtension of target in mils (mrad).</li>
+                `,
+                thStandardsTitle: "Comparison of Angular Systems",
+                thStandardsDesc: "Military optics use 3 primary circle division standards (360°):",
+                thStandardsTable: `
+                    <thead>
+                        <tr>
+                            <th>Standard / Region</th>
+                            <th>Circle Division</th>
+                            <th>1 Unit Value</th>
+                            <th>mrad Equivalent</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td><strong>NATO Mil</strong></td>
+                            <td>6400 mil</td>
+                            <td>0.05625°</td>
+                            <td>1 NATO mil ≈ 0.982 mrad</td>
+                        </tr>
+                        <tr>
+                            <td><strong>USSR / Warsaw Pact</strong></td>
+                            <td>6000 mils</td>
+                            <td>0.06000°</td>
+                            <td>1 mil ≈ 1.047 mrad</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Swedish Streck</strong></td>
+                            <td>6300 streck</td>
+                            <td>0.05714°</td>
+                            <td>1 streck ≈ 0.997 mrad</td>
+                        </tr>
+                    </tbody>
+                `,
+                thStandardsNote: "When operating optical sights from different nations, apply conversion factors for precise fire control.",
+                thTargetsTitle: "Standard Reference Target Sizes",
+                thTargetsTable: `
+                    <thead>
+                        <tr>
+                            <th>Target Type</th>
+                            <th>Height (B_h)</th>
+                            <th>Width / Length (B_w)</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td>🚶 <strong>Infantryman (Human)</strong></td>
+                            <td>1.7 m</td>
+                            <td>0.5 m</td>
+                        </tr>
+                        <tr>
+                            <td>🛡️ <strong>Tank (T-72 / M1 Abrams)</strong></td>
+                            <td>2.8 m</td>
+                            <td>3.5 m (width)</td>
+                        </tr>
+                        <tr>
+                            <td>🚚 <strong>Military Truck (Ural / KAMAZ)</strong></td>
+                            <td>3.2 m</td>
+                            <td>6.5 m (length)</td>
+                        </tr>
+                        <tr>
+                            <td>🏢 <strong>Building Single Floor</strong></td>
+                            <td>3.0 m</td>
+                            <td>—</td>
+                        </tr>
+                        <tr>
+                            <td>🏢 <strong>3-Story Building</strong></td>
+                            <td>9.0 m</td>
+                            <td>12.0 m</td>
+                        </tr>
+                    </tbody>
+                `,
+                thExampleTitle: "Practical Measurement Example",
+                thExampleContent: `
+                    <p><strong>Scenario:</strong> A tank with a known height of 2.8 m is observed. Using the red MIL-Dot reticle, its height spans exactly 3.5 mil ticks.</p>
+                    <div class="code-box">
+                        Given: B = 2.8 m, θ = 3.5 mil<br><br>
+                        Distance D Calculation:<br>
+                        D = (B × 1000) / θ<br>
+                        D = (2.8 × 1000) / 3.5 = 2800 / 3.5 = 800 meters.
+                    </div>
+                    <p>Therefore, the calculated range to target is <strong>800 meters</strong>.</p>
+                `
+            }
+        };
+
+        // Standard Military Target Types (Requirement 2)
+        const TARGET_TYPES = [
+            {
+                type: 'person',
+                nameUA: 'Піхотинець',
+                nameEN: 'Infantryman',
+                icon: '🚶',
+                realHeight: 1.7,
+                realWidth: 0.5
+            },
+            {
+                type: 'tank',
+                nameUA: 'Танк Т-72',
+                nameEN: 'T-72 Tank',
+                icon: '🛡️',
+                realHeight: 2.8,
+                realWidth: 3.5
+            },
+            {
+                type: 'truck',
+                nameUA: 'Вантажівка',
+                nameEN: 'Military Truck',
+                icon: '🚚',
+                realHeight: 3.2,
+                realWidth: 6.5
+            },
+            {
+                type: 'building',
+                nameUA: 'Будинок',
+                nameEN: 'Building',
+                icon: '🏢',
+                floorHeight: 3.0
+            }
+        ];
+
+        // State variables
+        let currentLang = 'UA';
+        let currentMode = 'DISTANCE'; // 'DISTANCE' or 'SIZE'
+        let zoomLevel = 1;
+        let score = { correct: 0, total: 0 };
+
+        let scenarioTargets = [];
+        let selectedTargetIndex = 0;
+        let quizAnswered = false;
+        let autoSelectBlocked = false;
+        let autoSelectTimer = null;
+
+        // Sight Pan Offset
+        let sightPan = { x: 0, y: 0 };
+        let isDragging = false;
+        let dragStart = { x: 0, y: 0 };
+
+        // Canvas Context
+        const canvas = document.getElementById('scope-canvas');
+        const ctx = canvas.getContext('2d');
+        const canvasWrap = document.getElementById('canvas-wrap');
+
+        // Application Initialization
+        window.addEventListener('load', () => {
+            resizeCanvas();
+            window.addEventListener('resize', resizeCanvas);
+            setupInputListeners();
+            generateNewScenario();
+            updateUIStrings();
+            requestAnimationFrame(renderLoop);
+        });
+
+        function resizeCanvas() {
+            canvas.width = canvasWrap.clientWidth;
+            canvas.height = canvasWrap.clientHeight;
+        }
+
+        function setLanguage(lang) {
+            currentLang = lang;
+            document.getElementById('btn-lang-ua').classList.toggle('active', lang === 'UA');
+            document.getElementById('btn-lang-en').classList.toggle('active', lang === 'EN');
+            updateUIStrings();
+            renderTargetCards();
+            renderQuizCard();
+            updateTheoryModalText();
+        }
+
+        // Requirement 1: Mode Switch triggers New Scenario & resets score
+        function setMode(mode) {
+            currentMode = mode;
+            document.getElementById('btn-mode-dist').classList.toggle('active', mode === 'DISTANCE');
+            document.getElementById('btn-mode-size').classList.toggle('active', mode === 'SIZE');
+            generateNewScenario(); // Triggers fresh scenario & resets score!
+        }
+
+        function setZoom(zoom) {
+            zoomLevel = zoom;
+            const buttons = document.querySelectorAll('.header-controls .btn-group:nth-child(2) .btn-toggle');
+            buttons.forEach((btn, idx) => {
+                btn.classList.toggle('active', [1, 2, 4, 8][idx] === zoom);
+            });
+            document.getElementById('lbl-zoom').innerText = `${zoom}× MAG`;
+            clampSightPan();
+        }
+
+        function updateUIStrings() {
+            const strings = I18N[currentLang];
+            document.getElementById('ui-title').childNodes[0].nodeValue = strings.title + " ";
+            document.getElementById('ui-subtitle').innerText = strings.subtitle;
+            document.getElementById('btn-mode-dist').innerText = strings.modeDist;
+            document.getElementById('btn-mode-size').innerText = strings.modeSize;
+            document.getElementById('ui-new-task').innerText = strings.newTask;
+            document.getElementById('ui-theory-btn').innerText = strings.theoryBtn;
+            document.getElementById('ui-targets-in-view').innerText = strings.targetsInView;
+            document.getElementById('ui-selected-target').innerText = strings.selectedTarget;
+            document.getElementById('ui-measurement-task').innerText = strings.measurementTask;
+            document.getElementById('ui-modal-title').innerText = strings.modalTitle;
+
+            document.getElementById('tab-btn-formula').innerText = strings.tabFormula;
+            document.getElementById('tab-btn-standards').innerText = strings.tabStandards;
+            document.getElementById('tab-btn-targets').innerText = strings.tabTargets;
+            document.getElementById('tab-btn-example').innerText = strings.tabExample;
+        }
+
+        // Requirement 2: Guaranteed Angular Size (1.2 to 9.5 Mils) & Non-overlapping targets
+        function generateNewScenario() {
+            scenarioTargets = [];
+            quizAnswered = false;
+            if (autoSelectTimer) clearTimeout(autoSelectTimer);
+            autoSelectBlocked = false;
+
+            // Requirement 6: Reset score on new scenario
+            score = { correct: 0, total: 0 };
+            updateScoreBadge();
+
+            const targetCount = 5;
+            // Prescribed angular heights to guarantee 100% reticle readability (between 0.5 mil and 12 mils)
+            const targetThetaMils = [1.5, 2.8, 4.2, 6.5, 8.8];
+            shuffleArray(targetThetaMils);
+
+            // Prescribed non-overlapping horizontal world angles (mils) within reticle FOV (-28 to +28 mils)
+            const worldAngleMils = [-28, -14, 0, 14, 28];
+            shuffleArray(worldAngleMils);
+
+            for (let i = 0; i < targetCount; i++) {
+                const theta = targetThetaMils[i];
+                const worldAngle = worldAngleMils[i];
+
+                const template = TARGET_TYPES[Math.floor(Math.random() * TARGET_TYPES.length)];
+                let target = { ...template, id: i + 1, angularHeightMils: theta, worldAngleMil: worldAngle };
+
+                if (target.type === 'building') {
+                    const floors = Math.floor(Math.random() * 3) + 2; // 2 to 4 floors
+                    target.floors = floors;
+                    target.realHeight = floors * template.floorHeight;
+                    target.realWidth = 9.0 + floors * 1.5;
+                    target.nameUA = `Будинок (${floors} пов.)`;
+                    target.nameEN = `Building (${floors} fl.)`;
+                }
+
+                // Calculate exact distance D = (Height * 1000) / theta
+                target.distance = Math.round((target.realHeight * 1000) / theta);
+                target.worldX = (worldAngle / 1000) * target.distance;
+                target.angularWidthMils = (target.realWidth * 1000) / target.distance;
+
+                scenarioTargets.push(target);
+            }
+
+            // Sort targets by distance descending (furthest rendered first)
+            scenarioTargets.sort((a, b) => b.distance - a.distance);
+
+            selectedTargetIndex = 0;
+            resetSightPan();
+            renderTargetCards();
+            renderQuizCard();
+        }
+
+        function shuffleArray(arr) {
+            for (let i = arr.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [arr[i], arr[j]] = [arr[j], arr[i]];
+            }
+        }
+
+        function updateScoreBadge() {
+            const pct = score.total > 0 ? Math.round((score.correct / score.total) * 100) : 0;
+            document.getElementById('score-val').innerText = `${score.correct} / ${score.total} (${pct}%)`;
+        }
+
+        // Requirement 6: Render Clean Vertical Target Selector Column (Hides dimensions in Find Size mode!)
+        function renderTargetCards() {
+            const container = document.getElementById('target-chips-container');
+            container.innerHTML = '';
+            document.getElementById('lbl-target-count').innerText = `${scenarioTargets.length} Objects`;
+
+            scenarioTargets.forEach((t, idx) => {
+                const card = document.createElement('div');
+                card.className = `target-card-item ${idx === selectedTargetIndex ? 'active' : ''}`;
+                const name = currentLang === 'UA' ? t.nameUA : t.nameEN;
+
+                // Mode-dependent info: Hide dimensions in SIZE mode so answer isn't spoiled
+                const subInfo = currentMode === 'DISTANCE' 
+                    ? `${currentLang === 'UA' ? 'Висота B' : 'Height B'}: ${t.realHeight.toFixed(1)}m`
+                    : `${currentLang === 'UA' ? 'Відстань D' : 'Dist D'}: ${Math.round(t.distance)}m`;
+
+                card.innerHTML = `
+                    <div class="target-item-left">
+                        <span class="target-tag">#${idx + 1}</span>
+                        <span>${t.icon} ${name}</span>
+                    </div>
+                    <div style="font-family:monospace; font-size:0.74rem; color:var(--accent-amber);">
+                        ${subInfo}
+                    </div>
+                `;
+                card.onclick = () => selectTarget(idx);
+                container.appendChild(card);
+            });
+        }
+
+        function selectTarget(index) {
+            selectedTargetIndex = index;
+            quizAnswered = false;
+            if (autoSelectTimer) clearTimeout(autoSelectTimer);
+            autoSelectBlocked = false;
+            renderTargetCards();
+            renderQuizCard();
+        }
+
+        // Render Quiz & 5 Distinct Options
+        function renderQuizCard() {
+            const strings = I18N[currentLang];
+            const target = scenarioTargets[selectedTargetIndex];
+            if (!target) return;
+
+            document.getElementById('lbl-target-dist-tag').innerText = `Target #${selectedTargetIndex + 1}`;
+            document.getElementById('target-icon-preview').innerText = target.icon;
+            document.getElementById('lbl-target-name').innerText = currentLang === 'UA' ? target.nameUA : target.nameEN;
+
+            // Hide spoiler dims in Find Size mode
+            if (currentMode === 'DISTANCE') {
+                document.getElementById('lbl-target-dims').innerText = `${currentLang === 'UA' ? 'Відома висота' : 'Known Height'}: ${target.realHeight.toFixed(1)}m`;
+            } else {
+                document.getElementById('lbl-target-dims').innerText = `${currentLang === 'UA' ? 'Відома відстань' : 'Known Distance'}: ${Math.round(target.distance)}m`;
+            }
+
+            const givenLabel = document.getElementById('lbl-given-label');
+            const givenVal = document.getElementById('lbl-given-value');
+            const taskInstr = document.getElementById('lbl-task-instruction');
+
+            let exactAnswer = 0;
+            let choices = [];
+
+            if (currentMode === 'DISTANCE') {
+                givenLabel.innerText = strings.givenSizeLabel;
+                givenVal.innerHTML = `${currentLang === 'UA' ? 'Висота B' : 'Height B'} = <strong>${target.realHeight.toFixed(1)} m</strong>`;
+                taskInstr.innerText = strings.taskInstrDist;
+
+                exactAnswer = Math.round(target.distance);
+                choices = generateDistractors(exactAnswer);
+            } else {
+                givenLabel.innerText = strings.givenDistLabel;
+                givenVal.innerHTML = `${currentLang === 'UA' ? 'Відстань D' : 'Distance D'} = <strong>${Math.round(target.distance)} m</strong>`;
+                taskInstr.innerText = strings.taskInstrSize;
+
+                exactAnswer = parseFloat(target.realHeight.toFixed(1));
+                choices = generateDistractors(exactAnswer);
+            }
+
+            const container = document.getElementById('quiz-options-container');
+            container.innerHTML = '';
+            document.getElementById('solution-box').classList.remove('visible');
+
+            choices.forEach(val => {
+                const btn = document.createElement('button');
+                btn.className = 'btn-option';
+                btn.innerHTML = `<span>${val} ${currentMode === 'DISTANCE' ? 'm' : 'm'}</span>`;
+                btn.onclick = () => submitAnswer(val, exactAnswer, btn);
+                container.appendChild(btn);
+            });
+        }
+
+        function generateDistractors(exact) {
+            const set = new Set();
+            set.add(exact);
+
+            if (currentMode === 'DISTANCE') {
+                const offsets = [-320, -160, 160, 320];
+                offsets.forEach(off => {
+                    let val = Math.round((exact + off) / 20) * 20;
+                    if (val >= 100 && val !== exact) set.add(val);
+                });
+            } else {
+                const offsets = [-1.2, -0.6, 0.6, 1.2];
+                offsets.forEach(off => {
+                    let val = parseFloat((exact + off).toFixed(1));
+                    if (val >= 0.5 && val !== exact) set.add(val);
+                });
+            }
+
+            let arr = Array.from(set);
+            while (arr.length < 5) {
+                let val = currentMode === 'DISTANCE'
+                    ? exact + (arr.length * 180)
+                    : parseFloat((exact + arr.length * 0.7).toFixed(1));
+                arr.push(val);
+            }
+            arr.sort((a, b) => a - b);
+            return arr.slice(0, 5);
+        }
+
+        function submitAnswer(userVal, exactVal, clickedBtn) {
+            if (quizAnswered) return;
+            quizAnswered = true;
+            autoSelectBlocked = true;
+
+            const target = scenarioTargets[selectedTargetIndex];
+            const isCorrect = Math.abs(userVal - exactVal) < 0.05;
+
+            score.total += 1;
+            if (isCorrect) score.correct += 1;
+            updateScoreBadge();
+
+            const allBtns = document.querySelectorAll('.btn-option');
+            allBtns.forEach(btn => {
+                btn.disabled = true;
+                const textVal = parseFloat(btn.innerText);
+                if (Math.abs(textVal - exactVal) < 0.05) {
+                    btn.classList.add('correct');
+                } else if (btn === clickedBtn && !isCorrect) {
+                    btn.classList.add('wrong');
+                }
+            });
+
+            const solBox = document.getElementById('solution-box');
+            const solText = document.getElementById('solution-text');
+            solBox.classList.add('visible');
+
+            const milH = target.angularHeightMils.toFixed(1);
+            if (currentMode === 'DISTANCE') {
+                solText.innerHTML = `
+                    <div>Measured angle θ: <span class="formula-highlight">${milH} Mils</span></div>
+                    <div>Formula: <strong>D = (B × 1000) / θ</strong></div>
+                    <div>D = (${target.realHeight.toFixed(1)} × 1000) / ${milH} = <strong>${Math.round(target.distance)} meters</strong></div>
+                `;
+            } else {
+                solText.innerHTML = `
+                    <div>Measured angle θ: <span class="formula-highlight">${milH} Mils</span></div>
+                    <div>Formula: <strong>B = (D × θ) / 1000</strong></div>
+                    <div>B = (${Math.round(target.distance)} × ${milH}) / 1000 = <strong>${target.realHeight.toFixed(1)} meters</strong></div>
+                `;
+            }
+
+            // Auto-targeting reactivates after 5 seconds
+            if (autoSelectTimer) clearTimeout(autoSelectTimer);
+            autoSelectTimer = setTimeout(() => {
+                autoSelectBlocked = false;
+            }, 5000);
+        }
+
+        // Requirement 5: Interactive Panning & Auto-Crosshair Selection
+        function setupInputListeners() {
+            canvasWrap.addEventListener('mousedown', (e) => {
+                isDragging = true;
+                dragStart = { x: e.clientX - sightPan.x / 2, y: e.clientY - sightPan.y / 2 };
+            });
+
+            window.addEventListener('mousemove', (e) => {
+                if (!isDragging) return;
+                sightPan.x = (e.clientX - dragStart.x) * 2;
+                sightPan.y = (e.clientY - dragStart.y) * 2;
+                clampSightPan();
+                checkAutoCrosshairSelection();
+            });
+
+            window.addEventListener('mouseup', () => { isDragging = false; });
+
+            canvasWrap.addEventListener('touchstart', (e) => {
+                if (e.touches.length === 1) {
+                    isDragging = true;
+                    dragStart = { x: e.touches[0].clientX - sightPan.x / 2, y: e.touches[0].clientY - sightPan.y / 2 };
+                }
+            }, { passive: true });
+
+            canvasWrap.addEventListener('touchmove', (e) => {
+                if (isDragging && e.touches.length === 1) {
+                    sightPan.x = (e.touches[0].clientX - dragStart.x) * 2;
+                    sightPan.y = (e.touches[0].clientY - dragStart.y) * 2;
+                    clampSightPan();
+                    checkAutoCrosshairSelection();
+                }
+            }, { passive: true });
+
+            canvasWrap.addEventListener('touchend', () => { isDragging = false; });
+        }
+
+        function panSight(dx, dy) {
+            sightPan.x += dx * 2;
+            sightPan.y += dy * 2;
+            clampSightPan();
+            checkAutoCrosshairSelection();
+        }
+
+        function resetSightPan() {
+            sightPan = { x: 0, y: 0 };
+        }
+
+        function clampSightPan() {
+            const pixelsPerMil = 24 * zoomLevel;
+            // Scale panning limits dynamically with zoom level so all target angles remain reachable at high magnification
+            const maxPanX = Math.max(canvas.width * 1.5, 45 * pixelsPerMil);
+            const maxPanY = Math.max(canvas.height * 0.4, 25 * pixelsPerMil);
+            const minPanY = -Math.max(canvas.height * 0.4, 25 * pixelsPerMil);
+
+            if (sightPan.y > maxPanY) sightPan.y = maxPanY;
+            if (sightPan.y < minPanY) sightPan.y = minPanY;
+            if (sightPan.x > maxPanX) sightPan.x = maxPanX;
+            if (sightPan.x < -maxPanX) sightPan.x = -maxPanX;
+        }
+
+        // Auto-select target when crosshair passes over it (respecting 5s post-answer pause)
+        function checkAutoCrosshairSelection() {
+            if (autoSelectBlocked) return;
+            const cx = canvas.width / 2;
+            const cy = canvas.height / 2;
+            const pixelsPerMil = 24 * zoomLevel;
+
+            scenarioTargets.forEach((t, idx) => {
+                const tx = cx + sightPan.x + t.worldAngleMil * pixelsPerMil;
+                const groundDropMil = (1.5 * 1000) / t.distance;
+                const th = t.angularHeightMils * pixelsPerMil;
+                const tw = t.angularWidthMils * pixelsPerMil;
+                const targetCenterY = cy + sightPan.y + groundDropMil * pixelsPerMil - th / 2;
+
+                const dx = Math.abs(tx - cx);
+                const dy = Math.abs(targetCenterY - cy);
+
+                // Check if crosshair is within dynamic hit radius accounting for target screen size
+                const hitRadius = Math.max(45, Math.max(tw, th) * 0.6);
+                if (dx < hitRadius && dy < hitRadius && selectedTargetIndex !== idx) {
+                    selectTarget(idx);
+                }
+            });
+        }
+
+        // Main Render Loop
+        function renderLoop() {
+            const w = canvas.width;
+            const h = canvas.height;
+            if (w <= 0 || h <= 0) {
+                requestAnimationFrame(renderLoop);
+                return;
+            }
+            const cx = w / 2;
+            const cy = h / 2;
+
+            ctx.clearRect(0, 0, w, h);
+
+            // 1. Requirement 3: Muted Slate/Navy Mountain Background Contrast
+            drawLandscape(ctx, w, h, sightPan.x, sightPan.y);
+
+            // 2. Requirement 2: Crisp Dark Target Silhouettes & Bounding Frames
+            drawScenarioTargets(ctx, cx, cy, sightPan.x, sightPan.y);
+
+            // 3. Lens Vignette Overlay
+            drawScopeVignette(ctx, w, h, cx, cy);
+
+            // 4. Requirement 4: Illuminated Red FFP Reticle Grid
+            drawMilDotReticle(ctx, cx, cy);
+
+            requestAnimationFrame(renderLoop);
+        }
+
+        // Requirement 3: High contrast slate/navy mountains (No blending with target silhouettes)
+        function drawLandscape(ctx, w, h, panX, panY) {
+            const horizonY = h / 2 + panY;
+
+            // Sky
+            const skyGrad = ctx.createLinearGradient(0, 0, 0, Math.max(0, horizonY));
+            skyGrad.addColorStop(0, '#0b1329');
+            skyGrad.addColorStop(0.5, '#1e3254');
+            skyGrad.addColorStop(1, '#3a6196');
+            ctx.fillStyle = skyGrad;
+            ctx.fillRect(0, 0, w, Math.max(0, horizonY));
+
+            // Distant Mountains (Muted slate blue #1b263c)
+            ctx.fillStyle = '#1b263c';
+            ctx.beginPath();
+            ctx.moveTo(-100 + panX * 0.08, horizonY);
+            for (let x = -100; x <= w + 100; x += 140) {
+                const peakH = 40 + Math.sin(x * 0.008) * 30;
+                ctx.lineTo(x + panX * 0.08, horizonY - peakH);
+            }
+            ctx.lineTo(w + 100, horizonY);
+            ctx.closePath();
+            ctx.fill();
+
+            // Nearer Mountain Ridges (Slate navy #253550)
+            ctx.fillStyle = '#253550';
+            ctx.beginPath();
+            ctx.moveTo(-100 + panX * 0.15, horizonY);
+            for (let x = -100; x <= w + 100; x += 90) {
+                const peakH = 22 + Math.cos(x * 0.015) * 18;
+                ctx.lineTo(x + panX * 0.15, horizonY - peakH);
+            }
+            ctx.lineTo(w + 100, horizonY);
+            ctx.closePath();
+            ctx.fill();
+
+            // Soft Horizon Haze Layer
+            const haze = ctx.createLinearGradient(0, horizonY - 15, 0, horizonY + 15);
+            haze.addColorStop(0, 'rgba(100, 140, 180, 0.25)');
+            haze.addColorStop(1, 'rgba(27, 67, 41, 0.0)');
+            ctx.fillStyle = haze;
+            ctx.fillRect(0, horizonY - 15, w, 30);
+
+            // Ground Field
+            const groundGrad = ctx.createLinearGradient(0, Math.max(0, horizonY), 0, h);
+            groundGrad.addColorStop(0, '#1b4329');
+            groundGrad.addColorStop(0.3, '#15803d');
+            groundGrad.addColorStop(1, '#08331e');
+            ctx.fillStyle = groundGrad;
+            ctx.fillRect(0, Math.max(0, horizonY), w, Math.max(0, h - horizonY));
+        }
+
+        // Requirement 2: Crisp Dark Tactical Charcoal Silhouettes with Realistic Ground Anchoring
+        function drawScenarioTargets(ctx, cx, cy, panX, panY) {
+            const pixelsPerMil = 24 * zoomLevel;
+            const horizonY = cy + panY;
+
+            scenarioTargets.forEach((target, idx) => {
+                const tx = cx + panX + target.worldAngleMil * pixelsPerMil;
+                
+                // Realistic camera perspective ground drop: Camera height ~1.5m above ground plane
+                const groundDropMil = (1.5 * 1000) / target.distance;
+                const ty = horizonY + groundDropMil * pixelsPerMil;
+
+                const tw = target.angularWidthMils * pixelsPerMil;
+                const th = target.angularHeightMils * pixelsPerMil;
+
+                ctx.save();
+                ctx.translate(tx, ty);
+
+                // High contrast dark charcoal color
+                ctx.fillStyle = '#0a0f1d';
+                ctx.strokeStyle = '#475569';
+                ctx.lineWidth = 1.2;
+
+                if (target.type === 'person') {
+                    ctx.beginPath();
+                    const headRadius = Math.max(0, th * 0.14);
+                    ctx.arc(0, -th + (th * 0.14), headRadius, 0, Math.PI * 2);
+                    ctx.fill();
+                    ctx.stroke();
+                    ctx.fillRect(-tw / 2, -th * 0.74, tw, th * 0.74);
+                    ctx.strokeRect(-tw / 2, -th * 0.74, tw, th * 0.74);
+                } else if (target.type === 'tank') {
+                    ctx.fillRect(-tw / 2, -th * 0.55, tw, th * 0.55);
+                    ctx.strokeRect(-tw / 2, -th * 0.55, tw, th * 0.55);
+                    ctx.fillRect(-tw * 0.25, -th, tw * 0.5, th * 0.45);
+                    ctx.strokeRect(-tw * 0.25, -th, tw * 0.5, th * 0.45);
+                    ctx.fillRect(-tw * 0.55, -th * 0.75, tw * 0.35, th * 0.12);
+                } else if (target.type === 'truck') {
+                    ctx.fillRect(-tw / 2, -th, tw * 0.7, th);
+                    ctx.strokeRect(-tw / 2, -th, tw * 0.7, th);
+                    ctx.fillRect(tw * 0.2, -th * 0.7, tw * 0.3, th * 0.7);
+                    ctx.strokeRect(tw * 0.2, -th * 0.7, tw * 0.3, th * 0.7);
+                } else if (target.type === 'building') {
+                    ctx.fillRect(-tw / 2, -th, tw, th);
+                    ctx.strokeRect(-tw / 2, -th, tw, th);
+
+                    ctx.fillStyle = 'rgba(254, 240, 138, 0.85)';
+                    const floors = target.floors || 3;
+                    const windowH = th / (floors * 2.2);
+                    const windowW = tw / 4.5;
+
+                    for (let f = 0; f < floors; f++) {
+                        const wy = -th + f * (th / floors) + windowH * 0.4;
+                        for (let col = 0; col < 3; col++) {
+                            const wx = -tw * 0.38 + col * (tw * 0.32);
+                            ctx.fillRect(wx, wy, windowW, windowH);
+                        }
+                    }
+                }
+
+                // Active Bounding Box Highlight
+                if (idx === selectedTargetIndex) {
+                    ctx.strokeStyle = '#38bdf8';
+                    ctx.lineWidth = 1.8;
+                    ctx.setLineDash([4, 4]);
+                    ctx.strokeRect(-tw / 2 - 2, -th - 2, tw + 4, th + 4);
+                    ctx.setLineDash([]);
+
+                    ctx.fillStyle = '#38bdf8';
+                    ctx.font = 'bold 11px monospace';
+                    ctx.fillText(`#${idx + 1}`, -tw / 2, -th - 8);
+                }
+
+                ctx.restore();
+            });
+        }
+
+        function drawScopeVignette(ctx, w, h, cx, cy) {
+            const scopeRadius = Math.max(0, Math.min(w, h) * 0.46);
+            if (scopeRadius <= 0) return;
+
+            ctx.save();
+            ctx.beginPath();
+            ctx.rect(0, 0, w, h);
+            ctx.arc(cx, cy, scopeRadius, 0, Math.PI * 2, true);
+            ctx.fillStyle = '#020617';
+            ctx.fill();
+
+            ctx.strokeStyle = '#334155';
+            ctx.lineWidth = 6;
+            ctx.beginPath();
+            ctx.arc(cx, cy, scopeRadius, 0, Math.PI * 2);
+            ctx.stroke();
+
+            ctx.restore();
+        }
+
+        // Requirement 4: Illuminated Red FFP Reticle Grid
+        function drawMilDotReticle(ctx, cx, cy) {
+            const pixelsPerMil = 24 * zoomLevel;
+            const scopeRadius = Math.max(0, Math.min(canvas.width, canvas.height) * 0.46);
+            if (scopeRadius <= 2) return;
+
+            ctx.save();
+
+            // Clip reticle inside scope glass aperture to prevent overflow at high zoom
+            ctx.beginPath();
+            ctx.arc(cx, cy, scopeRadius - 2, 0, Math.PI * 2);
+            ctx.clip();
+
+            const redIllum = '#ef4444';
+            ctx.strokeStyle = redIllum;
+            ctx.fillStyle = redIllum;
+            ctx.shadowColor = 'rgba(239, 68, 68, 0.4)';
+            ctx.shadowBlur = 3;
+            ctx.lineWidth = 1.5;
+
+            // Reticle Crosshair extending to glass edge
+            ctx.beginPath();
+            ctx.moveTo(cx - scopeRadius, cy); ctx.lineTo(cx + scopeRadius, cy);
+            ctx.moveTo(cx, cy - scopeRadius); ctx.lineTo(cx, cy + scopeRadius);
+            ctx.stroke();
+
+            ctx.font = 'bold 10px monospace';
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+
+            // Integer loop (-30 to 30 half-mils) to avoid floating-point modulo bugs on tick division
+            for (let i = -30; i <= 30; i++) {
+                if (i === 0) continue;
+
+                const mil = i / 2;
+                const offset = mil * pixelsPerMil;
+
+                if (Math.abs(offset) > scopeRadius - 5) continue;
+
+                const isMajor = (i % 2 === 0);
+                const isFive = (i % 10 === 0);
+
+                const hx = Math.round(cx + offset);
+                const tickH = isFive ? 9 : (isMajor ? 6 : 3.5);
+
+                ctx.beginPath();
+                ctx.moveTo(hx, cy - tickH); ctx.lineTo(hx, cy + tickH);
+                ctx.stroke();
+
+                const vy = Math.round(cy - offset);
+                ctx.beginPath();
+                ctx.moveTo(cx - tickH, vy); ctx.lineTo(cx + tickH, vy);
+                ctx.stroke();
+
+                if (isFive) {
+                    const label = Math.abs(mil).toString();
+                    ctx.fillText(label, hx, cy + 18);
+                    ctx.fillText(label, cx + 18, vy);
+                }
+            }
+
+            // Center illuminated red dot
+            ctx.beginPath();
+            ctx.arc(cx, cy, 2.5, 0, Math.PI * 2);
+            ctx.fill();
+
+            ctx.restore();
+        }
+
+        // Theory Modal Controls & Translations
+        function toggleTheoryModal(open) {
+            document.getElementById('theory-modal').classList.toggle('open', open);
+            if (open) updateTheoryModalText();
+        }
+
+        function switchTheoryTab(tabId) {
+            const tabs = document.querySelectorAll('.modal-nav .tab-btn');
+            tabs.forEach(btn => btn.classList.remove('active'));
+
+            const contents = document.querySelectorAll('.theory-tab-content');
+            contents.forEach(c => c.classList.remove('active'));
+
+            event.target.classList.add('active');
+            document.getElementById(tabId).classList.add('active');
+        }
+
+        function updateTheoryModalText() {
+            const strings = I18N[currentLang];
+            document.getElementById('th-f-title').innerText = strings.thFormulaTitle;
+            document.getElementById('th-f-desc').innerText = strings.thFormulaDesc;
+            document.getElementById('th-f-list').innerHTML = strings.thFormulaList;
+
+            document.getElementById('th-s-title').innerText = strings.thStandardsTitle;
+            document.getElementById('th-s-desc').innerText = strings.thStandardsDesc;
+            document.getElementById('th-s-table').innerHTML = strings.thStandardsTable;
+            document.getElementById('th-s-note').innerText = strings.thStandardsNote;
+
+            document.getElementById('th-t-title').innerText = strings.thTargetsTitle;
+            document.getElementById('th-t-table').innerHTML = strings.thTargetsTable;
+
+            document.getElementById('th-e-title').innerText = strings.thExampleTitle;
+            document.getElementById('th-e-content').innerHTML = strings.thExampleContent;
+        }
+    </script>
+</body>
+</html>
