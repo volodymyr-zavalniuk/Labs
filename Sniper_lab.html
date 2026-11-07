@@ -1,0 +1,1421 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>3D Sniper Ballistics & Scope Simulator</title>
+    <style>
+        :root {
+            --bg-color: #0b0f19;
+            --panel-bg: #151c2c;
+            --card-bg: #1e293b;
+            --accent-cyan: #38bdf8;
+            --accent-amber: #f59e0b;
+            --text-main: #f8fafc;
+            --text-muted: #94a3b8;
+            --border-color: #334155;
+            --success-color: #22c55e;
+            --danger-color: #ef4444;
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
+        body { background-color: var(--bg-color); color: var(--text-main); height: 100vh; overflow: hidden; display: flex; flex-direction: column; }
+
+        /* Header Bar */
+        header {
+            height: 48px;
+            background-color: var(--panel-bg);
+            border-bottom: 1px solid var(--border-color);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0 16px;
+            flex-shrink: 0;
+        }
+        header h1 { font-size: 1.1rem; font-weight: 700; color: var(--accent-cyan); display: flex; align-items: center; gap: 8px; }
+        header h1 span { color: var(--text-muted); font-weight: 400; font-size: 0.82rem; }
+
+        .header-controls { display: flex; gap: 10px; }
+        button.btn-header {
+            background: var(--card-bg);
+            border: 1px solid var(--border-color);
+            color: var(--text-main);
+            font-weight: 700;
+            padding: 6px 14px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 0.82rem;
+            transition: all 0.2s;
+        }
+        button.btn-header:hover { background: #334155; }
+        button.btn-fire-all {
+            background: linear-gradient(135deg, #0284c7, #2563eb);
+            color: #ffffff;
+            font-weight: 800;
+            border: none;
+            box-shadow: 0 0 10px rgba(56, 189, 248, 0.3);
+        }
+        button.btn-fire-all:hover { background: linear-gradient(135deg, #0369a1, #1d4ed8); }
+
+        /* Main Grid Layout */
+        #main-grid {
+            flex: 1;
+            display: grid;
+            grid-template-columns: 41% 18% 41%;
+            grid-template-rows: minmax(260px, 46%) 1fr;
+            grid-template-areas:
+                "A1s B A2s"
+                "A1m B A2m";
+            gap: 8px;
+            padding: 8px;
+            min-height: 0;
+            transition: grid-template-columns 0.3s ease;
+        }
+
+        /* Single View Mode Layout Adjustment */
+        #main-grid.single-mode {
+            grid-template-columns: 75% 25%;
+            grid-template-areas:
+                "A1s B"
+                "A1m B";
+        }
+        #main-grid.single-mode .rifle-2-element { display: none !important; }
+
+        /* Settings Cards */
+        .settings-card {
+            background-color: var(--panel-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            padding: 8px 12px;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+        }
+        .settings-card.cyan-theme { border-top: 3px solid var(--accent-cyan); }
+        .settings-card.amber-theme { border-top: 3px solid var(--accent-amber); }
+
+        /* Top Action Bar inside Settings Panel */
+        .settings-top-bar {
+            display: flex;
+            gap: 6px;
+            align-items: center;
+            border-bottom: 1px solid var(--border-color);
+            padding-bottom: 6px;
+        }
+        .preset-select-wrap { flex: 1; min-width: 0; }
+        select { background-color: var(--card-bg); color: var(--text-main); border: 1px solid var(--border-color); padding: 5px 8px; border-radius: 6px; font-size: 0.82rem; outline: none; width: 100%; }
+
+        .btn-fire {
+            padding: 6px 12px;
+            border: none;
+            border-radius: 6px;
+            font-weight: 800;
+            font-size: 0.8rem;
+            cursor: pointer;
+            text-transform: uppercase;
+            letter-spacing: 0.03em;
+            white-space: nowrap;
+            transition: background 0.2s;
+        }
+        .cyan-theme .btn-fire { background: var(--accent-cyan); color: #0f172a; }
+        .cyan-theme .btn-fire:hover { background: #0284c7; color: white; }
+        .amber-theme .btn-fire { background: var(--accent-amber); color: #0f172a; }
+        .amber-theme .btn-fire:hover { background: #d97706; color: white; }
+
+        .btn-toggle-crosshair {
+            background: var(--card-bg);
+            border: 1px solid var(--border-color);
+            color: var(--text-muted);
+            font-weight: 700;
+            padding: 6px 10px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 0.76rem;
+            white-space: nowrap;
+            transition: all 0.2s;
+        }
+        .btn-toggle-crosshair:hover { background: #334155; color: var(--text-main); }
+        .cyan-theme .btn-toggle-crosshair.active {
+            background: rgba(56, 189, 248, 0.2);
+            border-color: var(--accent-cyan);
+            color: var(--accent-cyan);
+        }
+        .amber-theme .btn-toggle-crosshair.active {
+            background: rgba(245, 158, 11, 0.2);
+            border-color: var(--accent-amber);
+            color: var(--accent-amber);
+        }
+
+        .btn-sync {
+            background: var(--card-bg);
+            border: 1px solid var(--border-color);
+            color: var(--text-main);
+            padding: 5px 8px;
+            border-radius: 6px;
+            font-size: 0.74rem;
+            cursor: pointer;
+            white-space: nowrap;
+        }
+        .btn-sync:hover { background: #334155; }
+
+        /* 3-Column Layout inside Settings Panel */
+        .controls-3col-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 8px;
+        }
+
+        .control-group {
+            background: rgba(15, 23, 42, 0.4);
+            border: 1px solid var(--border-color);
+            border-radius: 6px;
+            padding: 6px 8px;
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+        }
+        .control-group h3 { font-size: 0.72rem; color: var(--text-muted); text-transform: uppercase; font-weight: 700; margin-bottom: 2px; }
+
+        .input-row { display: flex; flex-direction: column; gap: 1px; }
+        .label-val { display: flex; justify-content: space-between; font-size: 0.74rem; color: var(--text-muted); }
+        .label-val span.val { color: var(--text-main); font-weight: 600; font-family: monospace; }
+
+        input[type="range"] { width: 100%; accent-color: var(--accent-cyan); cursor: pointer; }
+        .amber-theme input[type="range"] { accent-color: var(--accent-amber); }
+
+        .turret-controls { display: flex; align-items: center; gap: 4px; margin-top: 1px; }
+        .btn-step { background: var(--card-bg); border: 1px solid var(--border-color); color: var(--text-main); width: 22px; height: 22px; border-radius: 4px; font-weight: 700; cursor: pointer; display: flex; align-items: center; justify-content: center; }
+        .btn-step:hover { background: #334155; }
+
+        /* Scope Cards */
+        .scope-card {
+            background-color: #020617;
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            position: relative;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+        }
+        .scope-card.cyan-theme { grid-area: A1m; border-left: 3px solid var(--accent-cyan); }
+        .scope-card.amber-theme { grid-area: A2m; border-left: 3px solid var(--accent-amber); }
+        .scope-canvas-wrap { flex: 1; position: relative; width: 100%; height: 100%; }
+
+        /* Middle Column B (Top View) */
+        #col-b {
+            grid-area: B;
+            background-color: var(--panel-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+
+        /* Bottom Row C (Side View) */
+        #row-c {
+            height: 145px;
+            background-color: var(--panel-bg);
+            border-top: 1px solid var(--border-color);
+            display: flex;
+            flex-direction: column;
+            padding: 4px 12px;
+            flex-shrink: 0;
+        }
+
+        .view-title {
+            font-size: 0.72rem;
+            font-weight: 800;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            padding: 5px 10px;
+            background: rgba(15, 23, 42, 0.6);
+            border-bottom: 1px solid var(--border-color);
+            display: flex;
+            justify-content: space-between;
+        }
+
+        .canvas-container-flex { flex: 1; position: relative; width: 100%; height: 100%; }
+        canvas { display: block; width: 100%; height: 100%; }
+
+        .impact-badge {
+            position: absolute;
+            bottom: 10px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(15, 23, 42, 0.88);
+            border: 1px solid var(--border-color);
+            padding: 5px 12px;
+            border-radius: 6px;
+            font-size: 0.78rem;
+            font-family: monospace;
+            text-align: center;
+            pointer-events: none;
+            backdrop-filter: blur(4px);
+        }
+    </style>
+</head>
+<body>
+
+    <header>
+        <h1>3D Sniper Ballistics Simulator <span>(Standard Zero, MIL Reticle & Coriolis Model)</span></h1>
+        <div class="header-controls">
+            <button class="btn-header" id="btn-toggle-view">Switch to Single View</button>
+            <button class="btn-header btn-fire-all" id="btn-fire-both">FIRE BOTH RIFLES</button>
+        </div>
+    </header>
+
+    <div id="main-grid">
+        <!-- A1s: Rifle 1 Settings Panel -->
+        <div class="settings-card cyan-theme" style="grid-area: A1s;">
+            <div class="settings-top-bar">
+                <div class="preset-select-wrap">
+                    <select id="preset-1">
+                        <option value="m24">M24 SWS / Rem 700 (7.62×51mm M118LR)</option>
+                        <option value="svd">SVD Dragunov (7.62×54R 7N1)</option>
+                        <option value="awm">AI AWM (.338 Lapua Magnum)</option>
+                        <option value="cheytac">CheyTac M200 (.408 CheyTac)</option>
+                        <option value="m82">Barrett M82A1 (.50 BMG M33)</option>
+                        <option value="m16">M16A4 / M4A1 (5.56×45mm M855)</option>
+                        <option value="ak74">AK-74 (5.45×39mm 7N6)</option>
+                        <option value="akm">AKM (7.62×39mm M43)</option>
+                    </select>
+                </div>
+                <button class="btn-fire" id="btn-fire-1">FIRE RIFLE 1</button>
+                <button class="btn-toggle-crosshair" id="btn-crosshair-1" onclick="toggleCrosshair(1)">Fix Crosshair: OFF</button>
+                <button class="btn-sync rifle-2-element" id="btn-sync-1" title="Copy to Rifle 2">Sync to 2</button>
+            </div>
+            
+            <!-- 3-Column Layout -->
+            <div class="controls-3col-grid">
+                <!-- Col 1: Ordnance & Barrel -->
+                <div class="control-group">
+                    <h3>Ordnance & Barrel</h3>
+                    <div class="input-row">
+                        <div class="label-val"><span>Muzzle Vel (<i>v</i><sub>0</sub>)</span><span class="val" id="val-v0-1">786 m/s</span></div>
+                        <input type="range" id="v0-1" min="200" max="1500" step="5" value="786">
+                    </div>
+                    <div class="input-row">
+                        <div class="label-val"><span>Mass (<i>m</i>)</span><span class="val" id="val-mass-1">11.34 g</span></div>
+                        <input type="range" id="mass-log-1" min="0" max="1000" step="1" value="300">
+                    </div>
+                    <div class="input-row">
+                        <div class="label-val"><span>Caliber (<i>d</i>)</span><span class="val" id="val-cal-1">7.62 mm</span></div>
+                        <input type="range" id="cal-1" min="4.5" max="20" step="0.01" value="7.62">
+                    </div>
+                    <div class="input-row">
+                        <div class="label-val"><span>Form Factor (<i>i</i><sub>G7</sub>)</span><span class="val" id="val-cd-1">0.95</span></div>
+                        <input type="range" id="cd-1" min="0.2" max="2.0" step="0.01" value="0.95">
+                    </div>
+                    <div class="input-row">
+                        <div class="label-val"><span>Twist (RH)</span><span class="val" id="val-twist-1">280 mm</span></div>
+                        <input type="range" id="twist-1" min="150" max="500" step="5" value="280">
+                    </div>
+                </div>
+
+                <!-- Col 2: Atmosphere & Location -->
+                <div class="control-group">
+                    <h3>Atmosphere & Location</h3>
+                    <div class="input-row">
+                        <div class="label-val"><span>Air Temp (<i>T</i><sub>surf</sub>)</span><span class="val" id="val-temp-1">15 °C</span></div>
+                        <input type="range" id="temp-1" min="-40" max="50" step="1" value="15">
+                    </div>
+                    <div class="input-row">
+                        <div class="label-val"><span>Altitude (<i>h</i><sub>0</sub>)</span><span class="val" id="val-alt-1">0 m</span></div>
+                        <input type="range" id="alt-1" min="0" max="5000" step="50" value="0">
+                    </div>
+                    <div class="input-row">
+                        <div class="label-val"><span>Calculated <i>ρ</i><sub>0</sub></span><span class="val" id="val-rho-1">1.225 kg/m³</span></div>
+                    </div>
+                    <div class="input-row">
+                        <div class="label-val"><span>10m Wind Speed</span><span class="val" id="val-wind-1">3.0 m/s</span></div>
+                        <input type="range" id="wind-1" min="0" max="25" step="0.5" value="3.0">
+                    </div>
+                    <div class="input-row">
+                        <div class="label-val"><span>Wind Angle</span><span class="val" id="val-wangle-1">90° (R-L)</span></div>
+                        <input type="range" id="wangle-1" min="0" max="360" step="5" value="90">
+                    </div>
+                    <div class="input-row">
+                        <div class="label-val"><span>Latitude (<i>ϕ</i>)</span><span class="val" id="val-lat-1">45° N</span></div>
+                        <input type="range" id="lat-1" min="-90" max="90" step="1" value="45">
+                    </div>
+                    <div class="input-row">
+                        <div class="label-val"><span>Azimuth (<i>α</i>)</span><span class="val" id="val-az-1">0° (North)</span></div>
+                        <input type="range" id="az-1" min="0" max="360" step="5" value="0">
+                    </div>
+                </div>
+
+                <!-- Col 3: Target & Turrets -->
+                <div class="control-group">
+                    <h3>Target & Scope Turrets</h3>
+                    <div class="input-row">
+                        <div class="label-val"><span>Target Distance</span><span class="val" id="val-dist-1">800 m</span></div>
+                        <input type="range" id="dist-1" min="100" max="2000" step="25" value="800">
+                    </div>
+                    <div class="input-row">
+                        <div class="label-val"><span>Target Elevation</span><span class="val" id="val-elev-1">0 m</span></div>
+                        <input type="range" id="elev-1" min="-100" max="200" step="5" value="0">
+                    </div>
+                    <div class="input-row">
+                        <div class="label-val"><span>Scope Zoom</span><span class="val" id="val-zoom-1">10×</span></div>
+                        <input type="range" id="zoom-1" min="3" max="25" step="1" value="10">
+                    </div>
+                    <div class="input-row">
+                        <div class="label-val"><span>Elev Turret</span><span class="val" id="val-t-elev-1">0.0 MIL</span></div>
+                        <div class="turret-controls">
+                            <button class="btn-step" onclick="stepTurret(1, 'elev', -1)">-</button>
+                            <input type="range" id="t-elev-1" min="-20" max="40" step="0.1" value="0.0">
+                            <button class="btn-step" onclick="stepTurret(1, 'elev', 1)">+</button>
+                        </div>
+                    </div>
+                    <div class="input-row">
+                        <div class="label-val"><span>Wind Turret</span><span class="val" id="val-t-wind-1">0.0 MIL</span></div>
+                        <div class="turret-controls">
+                            <button class="btn-step" onclick="stepTurret(1, 'wind', -1)">-</button>
+                            <input type="range" id="t-wind-1" min="-15" max="15" step="0.1" value="0.0">
+                            <button class="btn-step" onclick="stepTurret(1, 'wind', 1)">+</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- A1m: Scope 1 Viewport -->
+        <div class="scope-card cyan-theme">
+            <div class="view-title">Scope 1 (Rifle 1 Viewport) <span id="scope-info-1">10× MIL-Dot</span></div>
+            <div class="scope-canvas-wrap">
+                <canvas id="canvas-scope-1"></canvas>
+                <div class="impact-badge" id="badge-1">Target Ready • Aim and Fire</div>
+            </div>
+        </div>
+
+        <!-- B: Middle Column (Top View Trajectories) -->
+        <div id="col-b">
+            <div class="view-title">TOP VIEW (Wind & Spin Drift)</div>
+            <div class="canvas-container-flex">
+                <canvas id="canvas-top-view"></canvas>
+            </div>
+        </div>
+
+        <!-- A2s: Rifle 2 Settings Panel -->
+        <div class="settings-card amber-theme rifle-2-element" style="grid-area: A2s;">
+            <div class="settings-top-bar">
+                <div class="preset-select-wrap">
+                    <select id="preset-2">
+                        <option value="cheytac">CheyTac M200 (.408 CheyTac)</option>
+                        <option value="m24">M24 SWS / Rem 700 (7.62×51mm M118LR)</option>
+                        <option value="svd">SVD Dragunov (7.62×54R 7N1)</option>
+                        <option value="awm">AI AWM (.338 Lapua Magnum)</option>
+                        <option value="m82">Barrett M82A1 (.50 BMG M33)</option>
+                        <option value="m16">M16A4 / M4A1 (5.56×45mm M855)</option>
+                        <option value="ak74">AK-74 (5.45×39mm 7N6)</option>
+                        <option value="akm">AKM (7.62×39mm M43)</option>
+                    </select>
+                </div>
+                <button class="btn-fire" id="btn-fire-2">FIRE RIFLE 2</button>
+                <button class="btn-toggle-crosshair" id="btn-crosshair-2" onclick="toggleCrosshair(2)">Fix Crosshair: OFF</button>
+                <button class="btn-sync" id="btn-sync-2" title="Copy to Rifle 1">Sync to 1</button>
+            </div>
+            
+            <div class="controls-3col-grid">
+                <!-- Col 1: Ordnance & Barrel -->
+                <div class="control-group">
+                    <h3>Ordnance & Barrel</h3>
+                    <div class="input-row">
+                        <div class="label-val"><span>Muzzle Vel (<i>v</i><sub>0</sub>)</span><span class="val" id="val-v0-2">915 m/s</span></div>
+                        <input type="range" id="v0-2" min="200" max="1500" step="5" value="915">
+                    </div>
+                    <div class="input-row">
+                        <div class="label-val"><span>Mass (<i>m</i>)</span><span class="val" id="val-mass-2">27.15 g</span></div>
+                        <input type="range" id="mass-log-2" min="0" max="1000" step="1" value="450">
+                    </div>
+                    <div class="input-row">
+                        <div class="label-val"><span>Caliber (<i>d</i>)</span><span class="val" id="val-cal-2">10.36 mm</span></div>
+                        <input type="range" id="cal-2" min="4.5" max="20" step="0.01" value="10.36">
+                    </div>
+                    <div class="input-row">
+                        <div class="label-val"><span>Form Factor (<i>i</i><sub>G7</sub>)</span><span class="val" id="val-cd-2">0.72</span></div>
+                        <input type="range" id="cd-2" min="0.2" max="2.0" step="0.01" value="0.72">
+                    </div>
+                    <div class="input-row">
+                        <div class="label-val"><span>Twist (RH)</span><span class="val" id="val-twist-2">330 mm</span></div>
+                        <input type="range" id="twist-2" min="150" max="500" step="5" value="330">
+                    </div>
+                </div>
+
+                <!-- Col 2: Atmosphere & Location -->
+                <div class="control-group">
+                    <h3>Atmosphere & Location</h3>
+                    <div class="input-row">
+                        <div class="label-val"><span>Air Temp (<i>T</i><sub>surf</sub>)</span><span class="val" id="val-temp-2">15 °C</span></div>
+                        <input type="range" id="temp-2" min="-40" max="50" step="1" value="15">
+                    </div>
+                    <div class="input-row">
+                        <div class="label-val"><span>Altitude (<i>h</i><sub>0</sub>)</span><span class="val" id="val-alt-2">0 m</span></div>
+                        <input type="range" id="alt-2" min="0" max="5000" step="50" value="0">
+                    </div>
+                    <div class="input-row">
+                        <div class="label-val"><span>Calculated <i>ρ</i><sub>0</sub></span><span class="val" id="val-rho-2">1.225 kg/m³</span></div>
+                    </div>
+                    <div class="input-row">
+                        <div class="label-val"><span>10m Wind Speed</span><span class="val" id="val-wind-2">3.0 m/s</span></div>
+                        <input type="range" id="wind-2" min="0" max="25" step="0.5" value="3.0">
+                    </div>
+                    <div class="input-row">
+                        <div class="label-val"><span>Wind Angle</span><span class="val" id="val-wangle-2">90° (R-L)</span></div>
+                        <input type="range" id="wangle-2" min="0" max="360" step="5" value="90">
+                    </div>
+                    <div class="input-row">
+                        <div class="label-val"><span>Latitude (<i>ϕ</i>)</span><span class="val" id="val-lat-2">45° N</span></div>
+                        <input type="range" id="lat-2" min="-90" max="90" step="1" value="45">
+                    </div>
+                    <div class="input-row">
+                        <div class="label-val"><span>Azimuth (<i>α</i>)</span><span class="val" id="val-az-2">0° (North)</span></div>
+                        <input type="range" id="az-2" min="0" max="360" step="5" value="0">
+                    </div>
+                </div>
+
+                <!-- Col 3: Target & Turrets -->
+                <div class="control-group">
+                    <h3>Target & Scope Turrets</h3>
+                    <div class="input-row">
+                        <div class="label-val"><span>Target Distance</span><span class="val" id="val-dist-2">800 m</span></div>
+                        <input type="range" id="dist-2" min="100" max="2000" step="25" value="800">
+                    </div>
+                    <div class="input-row">
+                        <div class="label-val"><span>Target Elevation</span><span class="val" id="val-elev-2">0 m</span></div>
+                        <input type="range" id="elev-2" min="-100" max="200" step="5" value="0">
+                    </div>
+                    <div class="input-row">
+                        <div class="label-val"><span>Scope Zoom</span><span class="val" id="val-zoom-2">10×</span></div>
+                        <input type="range" id="zoom-2" min="3" max="25" step="1" value="10">
+                    </div>
+                    <div class="input-row">
+                        <div class="label-val"><span>Elev Turret</span><span class="val" id="val-t-elev-2">0.0 MIL</span></div>
+                        <div class="turret-controls">
+                            <button class="btn-step" onclick="stepTurret(2, 'elev', -1)">-</button>
+                            <input type="range" id="t-elev-2" min="-20" max="40" step="0.1" value="0.0">
+                            <button class="btn-step" onclick="stepTurret(2, 'elev', 1)">+</button>
+                        </div>
+                    </div>
+                    <div class="input-row">
+                        <div class="label-val"><span>Wind Turret</span><span class="val" id="val-t-wind-2">0.0 MIL</span></div>
+                        <div class="turret-controls">
+                            <button class="btn-step" onclick="stepTurret(2, 'wind', -1)">-</button>
+                            <input type="range" id="t-wind-2" min="-15" max="15" step="0.1" value="0.0">
+                            <button class="btn-step" onclick="stepTurret(2, 'wind', 1)">+</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- A2m: Scope 2 Viewport -->
+        <div class="scope-card amber-theme rifle-2-element">
+            <div class="view-title">Scope 2 (Rifle 2 Viewport) <span id="scope-info-2">10× MIL-Dot</span></div>
+            <div class="scope-canvas-wrap">
+                <canvas id="canvas-scope-2"></canvas>
+                <div class="impact-badge" id="badge-2">Target Ready • Aim and Fire</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- C: Bottom Row (Side View Trajectories) -->
+    <div id="row-c">
+        <div class="view-title">
+            <span>SIDE VIEW (Drop & Height Elevation Curve)</span>
+            <span style="font-family: monospace; font-size: 0.72rem;">
+                <strong style="color:var(--accent-cyan);">— Rifle 1</strong> 
+                <span class="rifle-2-element">&nbsp;&nbsp; <strong style="color:var(--accent-amber);">— Rifle 2</strong></span>
+            </span>
+        </div>
+        <div class="canvas-container-flex">
+            <canvas id="canvas-side-view"></canvas>
+        </div>
+    </div>
+
+    <script>
+        // Empirical G7 Drag Table
+        const G7_TABLE = [
+            { m: 0.00, cd: 0.125 }, { m: 0.20, cd: 0.125 }, { m: 0.40, cd: 0.125 },
+            { m: 0.60, cd: 0.126 }, { m: 0.70, cd: 0.128 }, { m: 0.80, cd: 0.134 },
+            { m: 0.90, cd: 0.155 }, { m: 0.95, cd: 0.190 }, { m: 1.00, cd: 0.301 },
+            { m: 1.05, cd: 0.355 }, { m: 1.10, cd: 0.362 }, { m: 1.20, cd: 0.350 },
+            { m: 1.40, cd: 0.317 }, { m: 1.60, cd: 0.290 }, { m: 1.80, cd: 0.269 },
+            { m: 2.00, cd: 0.254 }, { m: 2.20, cd: 0.242 }, { m: 2.50, cd: 0.228 },
+            { m: 3.00, cd: 0.211 }, { m: 3.50, cd: 0.199 }, { m: 4.00, cd: 0.190 }
+        ];
+
+        function getG7TableCd(Mach) {
+            if (Mach <= G7_TABLE[0].m) return G7_TABLE[0].cd;
+            if (Mach >= G7_TABLE[G7_TABLE.length - 1].m) return G7_TABLE[G7_TABLE.length - 1].cd;
+            for (let i = 0; i < G7_TABLE.length - 1; i++) {
+                const p1 = G7_TABLE[i], p2 = G7_TABLE[i + 1];
+                if (Mach >= p1.m && Mach <= p2.m) {
+                    const alpha = (Mach - p1.m) / (p2.m - p1.m);
+                    return p1.cd + alpha * (p2.cd - p1.cd);
+                }
+            }
+            return G7_TABLE[0].cd;
+        }
+
+        const RIFLE_PRESETS = {
+            "m24":     { v0: 786, mass: 0.01134, cal: 7.62, cd: 0.95, twist: 280 },
+            "svd":     { v0: 830, mass: 0.00990, cal: 7.92, cd: 0.98, twist: 240 },
+            "awm":     { v0: 900, mass: 0.01620, cal: 8.58, cd: 0.82, twist: 254 },
+            "cheytac": { v0: 915, mass: 0.02715, cal: 10.36, cd: 0.72, twist: 330 },
+            "m82":     { v0: 853, mass: 0.04200, cal: 12.70, cd: 0.88, twist: 381 },
+            "m16":     { v0: 910, mass: 0.00400, cal: 5.56, cd: 1.08, twist: 178 },
+            "ak74":    { v0: 900, mass: 0.00343, cal: 5.45, cd: 1.15, twist: 200 },
+            "akm":     { v0: 715, mass: 0.00790, cal: 7.62, cd: 1.40, twist: 240 }
+        };
+
+        const MIN_MASS = 0.0005, MAX_MASS = 1000.0;
+        const LOG_MIN = Math.log(MIN_MASS), LOG_MAX = Math.log(MAX_MASS);
+        function logSliderToMass(val) { return Math.exp(LOG_MIN + (parseFloat(val) / 1000.0) * (LOG_MAX - LOG_MIN)); }
+        function massToLogSlider(mass) { return Math.round(((Math.log(Math.max(MIN_MASS, Math.min(MAX_MASS, mass))) - LOG_MIN) / (LOG_MAX - LOG_MIN)) * 1000); }
+        function formatMass(kg) { return kg < 1.0 ? `${(kg * 1000).toFixed(kg < 0.01 ? 2 : 1)} g` : `${kg.toFixed(2)} kg`; }
+
+        const state1 = {}, state2 = {};
+        let sim1 = [], sim2 = [];
+        let animState1 = { active: false, startTime: 0, recoil: 0 }, animState2 = { active: false, startTime: 0, recoil: 0 };
+        let isSingleViewMode = false;
+
+        const canvasS1 = document.getElementById('canvas-scope-1'), ctxS1 = canvasS1.getContext('2d');
+        const canvasS2 = document.getElementById('canvas-scope-2'), ctxS2 = canvasS2.getContext('2d');
+        const canvasTop = document.getElementById('canvas-top-view'), ctxTop = canvasTop.getContext('2d');
+        const canvasSide = document.getElementById('canvas-side-view'), ctxSide = canvasSide.getContext('2d');
+
+        function toggleCrosshair(id) {
+            const btn = document.getElementById(`btn-crosshair-${id}`);
+            const isNowActive = !btn.classList.contains('active');
+            if (isNowActive) {
+                btn.classList.add('active');
+                btn.innerText = 'Fix Crosshair: ON';
+            } else {
+                btn.classList.remove('active');
+                btn.innerText = 'Fix Crosshair: OFF';
+            }
+            runSimulations();
+        }
+
+        function readState(id, targetObj) {
+            targetObj.v0 = parseFloat(document.getElementById(`v0-${id}`).value);
+            targetObj.mass = logSliderToMass(document.getElementById(`mass-log-${id}`).value);
+            targetObj.cal = parseFloat(document.getElementById(`cal-${id}`).value);
+            targetObj.cd = parseFloat(document.getElementById(`cd-${id}`).value);
+            targetObj.twist = parseFloat(document.getElementById(`twist-${id}`).value);
+
+            targetObj.temp = parseFloat(document.getElementById(`temp-${id}`).value);
+            targetObj.alt = parseFloat(document.getElementById(`alt-${id}`).value);
+            targetObj.windSpeed = parseFloat(document.getElementById(`wind-${id}`).value);
+            targetObj.windAngle = parseFloat(document.getElementById(`wangle-${id}`).value);
+            targetObj.latitude = parseFloat(document.getElementById(`lat-${id}`).value);
+            targetObj.azimuth = parseFloat(document.getElementById(`az-${id}`).value);
+
+            targetObj.dist = parseFloat(document.getElementById(`dist-${id}`).value);
+            targetObj.elev = parseFloat(document.getElementById(`elev-${id}`).value);
+            targetObj.zoom = parseFloat(document.getElementById(`zoom-${id}`).value);
+            targetObj.turretElev = parseFloat(document.getElementById(`t-elev-${id}`).value);
+            targetObj.turretWind = parseFloat(document.getElementById(`t-wind-${id}`).value);
+            targetObj.fixCrosshair = document.getElementById(`btn-crosshair-${id}`).classList.contains('active');
+
+            const atmos0 = getAtmosphere(0, targetObj.temp, targetObj.alt);
+            document.getElementById(`val-rho-${id}`).innerText = `${atmos0.rho.toFixed(3)} kg/m³`;
+
+            document.getElementById(`val-v0-${id}`).innerText = `${targetObj.v0} m/s`;
+            document.getElementById(`val-mass-${id}`).innerText = formatMass(targetObj.mass);
+            document.getElementById(`val-cal-${id}`).innerText = `${targetObj.cal.toFixed(2)} mm`;
+            document.getElementById(`val-cd-${id}`).innerText = `${targetObj.cd.toFixed(2)}`;
+            document.getElementById(`val-twist-${id}`).innerText = `${targetObj.twist} mm`;
+            document.getElementById(`val-temp-${id}`).innerText = `${targetObj.temp} °C`;
+            document.getElementById(`val-alt-${id}`).innerText = `${targetObj.alt} m`;
+            document.getElementById(`val-wind-${id}`).innerText = `${targetObj.windSpeed} m/s`;
+            document.getElementById(`val-wangle-${id}`).innerText = `${targetObj.windAngle}°`;
+            document.getElementById(`val-lat-${id}`).innerText = `${targetObj.latitude >= 0 ? targetObj.latitude + '° N' : Math.abs(targetObj.latitude) + '° S'}`;
+            document.getElementById(`val-az-${id}`).innerText = `${targetObj.azimuth}°`;
+
+            document.getElementById(`val-dist-${id}`).innerText = `${targetObj.dist} m`;
+            document.getElementById(`val-elev-${id}`).innerText = `${targetObj.elev} m`;
+            document.getElementById(`val-zoom-${id}`).innerText = `${targetObj.zoom}×`;
+            document.getElementById(`val-t-elev-${id}`).innerText = `${targetObj.turretElev > 0 ? '+' : ''}${targetObj.turretElev.toFixed(1)} MIL`;
+            document.getElementById(`val-t-wind-${id}`).innerText = `${targetObj.turretWind > 0 ? '+' : ''}${targetObj.turretWind.toFixed(1)} MIL`;
+            document.getElementById(`scope-info-${id}`).innerText = `${targetObj.zoom}× MIL-Dot`;
+        }
+
+        function getAtmosphere(y, T_surf_C, h0) {
+            const g = 9.80665, L = 0.0065, P0 = 101325, R = 287.058, gamma = 1.4;
+            const h = Math.max(0, h0 + y);
+            const T_surf_K = T_surf_C + 273.15;
+            const T_h = Math.max(100, T_surf_K - L * h);
+            const P_h = P0 * Math.pow(Math.max(0.001, 1 - (L * h) / T_surf_K), (g / (R * L)));
+            return { rho: P_h / (R * T_h), T_h, P_h, speedOfSound: Math.sqrt(gamma * R * T_h) };
+        }
+
+        function getWindAtAltitude(y, refWind) {
+            if (refWind === 0) return 0;
+            const z0 = 0.05, yRef = 10.0;
+            return refWind * (Math.log((Math.max(0.01, y) + z0) / z0) / Math.log((yRef + z0) / z0));
+        }
+
+        // Decomposed 3D Coriolis force (Latitude & Azimuth)
+        function derivatives3D(x, y, z, vx, vy, vz, t, p) {
+            const g = 9.80665;
+            const atmos = getAtmosphere(y, p.temp, p.alt);
+            const wind_mag = getWindAtAltitude(y, p.windSpeed);
+            const wind_rad = p.windAngle * Math.PI / 180;
+            
+            const wx = - wind_mag * Math.cos(wind_rad);
+            const wz = wind_mag * Math.sin(wind_rad);
+
+            const vrx = vx - wx, vry = vy, vrz = vz - wz;
+            const vrel = Math.hypot(vrx, vry, vrz);
+
+            const Mach = vrel / atmos.speedOfSound;
+            const Cd = getG7TableCd(Mach) * p.cd;
+
+            const r = (p.cal / 1000) / 2;
+            const area = Math.PI * r * r;
+            const k = (0.5 * atmos.rho * Cd * area) / p.mass;
+
+            const ax_drag = -k * vrel * vrx;
+            const ay_drag = -k * vrel * vry;
+            const az_drag = -k * vrel * vrz;
+
+            // Coriolis Acceleration components
+            const Omega = 7.2921159e-5;
+            const phi = p.latitude * Math.PI / 180;
+            const alpha = p.azimuth * Math.PI / 180;
+
+            const Ox = Omega * Math.cos(phi) * Math.cos(alpha);
+            const Oy = Omega * Math.sin(phi);
+            const Oz = -Omega * Math.cos(phi) * Math.sin(alpha);
+
+            // a_cor = -2 (Omega x v)
+            const ax_cor = -2 * (Oy * vz - Oz * vy);
+            const ay_cor = 2 * (Ox * vz - Oz * vx); // Eötvös & vertical Coriolis
+            const az_cor = 2 * (Oy * vx - Ox * vy); // Lateral horizontal Coriolis
+
+            // Gyroscopic Spin Drift (Right-Hand twist)
+            const d_in = p.cal / 25.4;
+            const m_grains = p.mass * 15432.4;
+            const twist_cal = (p.twist / 25.4) / d_in;
+            let Sg = (30 * m_grains) / (Math.pow(d_in, 3) * 4.2 * Math.pow(twist_cal, 2) * 3.0625)
+                   * Math.cbrt(p.v0 / 853.44) * (293.15 / atmos.T_h) * (atmos.P_h / 101325);
+            Sg = Math.max(0.8, Math.min(3.5, Sg));
+
+            let az_spin = 0;
+            if (t > 0.001) {
+                az_spin = 0.06 * Math.sqrt(1.5 / Sg) * 1.83 * 0.83 * Math.pow(t, -0.17);
+            }
+
+            return {
+                dx: vx, dy: vy, dz: vz,
+                dvx: ax_drag + ax_cor,
+                dvy: -g + ay_drag + ay_cor,
+                dvz: az_drag + az_cor + az_spin,
+                Mach, Cd, v_abs: Math.hypot(vx, vy, vz)
+            };
+        }
+
+        function rk4Step3D(x, y, z, vx, vy, vz, t, dt, p) {
+            const k1 = derivatives3D(x, y, z, vx, vy, vz, t, p);
+            const k2 = derivatives3D(x + 0.5*dt*k1.dx, y + 0.5*dt*k1.dy, z + 0.5*dt*k1.dz, vx + 0.5*dt*k1.dvx, vy + 0.5*dt*k1.dvy, vz + 0.5*dt*k1.dvz, t + 0.5*dt, p);
+            const k3 = derivatives3D(x + 0.5*dt*k2.dx, y + 0.5*dt*k2.dy, z + 0.5*dt*k2.dz, vx + 0.5*dt*k2.dvx, vy + 0.5*dt*k2.dvy, vz + 0.5*dt*k2.dvz, t + 0.5*dt, p);
+            const k4 = derivatives3D(x + dt*k3.dx, y + dt*k3.dy, z + dt*k3.dz, vx + dt*k3.dvx, vy + dt*k3.dvy, vz + dt*k3.dvz, t + dt, p);
+
+            return {
+                x: x + (dt/6)*(k1.dx + 2*k2.dx + 2*k3.dx + k4.dx),
+                y: y + (dt/6)*(k1.dy + 2*k2.dy + 2*k3.dy + k4.dy),
+                z: z + (dt/6)*(k1.dz + 2*k2.dz + 2*k3.dz + k4.dz),
+                vx: vx + (dt/6)*(k1.dvx + 2*k2.dvx + 2*k3.dvx + k4.dvx),
+                vy: vy + (dt/6)*(k1.dvy + 2*k2.dvy + 2*k3.dvy + k4.dvy),
+                vz: vz + (dt/6)*(k1.dvz + 2*k2.dvz + 2*k3.dvz + k4.dvz),
+                Mach: k1.Mach, Cd: k1.Cd, v_abs: k1.v_abs
+            };
+        }
+
+        // Standard Conditions Zeroing Solver (20°C, 0m altitude, 0 wind)
+        function calculateStandardZeroAngle(p, R_target) {
+            const stdP = {
+                v0: p.v0, mass: p.mass, cal: p.cal, cd: p.cd, twist: p.twist,
+                temp: 20.0, alt: 0, windSpeed: 0, windAngle: 0, latitude: 0, azimuth: 0
+            };
+
+            let theta0 = 0.001, theta1 = 0.005;
+
+            function simulateZeroShot(angle) {
+                let state = { x: 0, y: 0, z: 0, vx: stdP.v0 * Math.cos(angle), vy: stdP.v0 * Math.sin(angle), vz: 0, t: 0 };
+                const dt = 0.003;
+                while (state.x < R_target && state.y > -500 && state.t < 10) {
+                    const step = rk4Step3D(state.x, state.y, state.z, state.vx, state.vy, state.vz, state.t, dt, stdP);
+                    state.x = step.x; state.y = step.y; state.z = step.z;
+                    state.vx = step.vx; state.vy = step.vy; state.vz = step.vz;
+                    state.t += dt;
+                }
+                return state.y;
+            }
+
+            let y0 = simulateZeroShot(theta0);
+            let y1 = simulateZeroShot(theta1);
+
+            for (let iter = 0; iter < 5; iter++) {
+                if (Math.abs(y1) < 0.0005 || Math.abs(y1 - y0) < 1e-7) break;
+                let thetaNext = theta1 - y1 * (theta1 - theta0) / (y1 - y0);
+                theta0 = theta1; y0 = y1;
+                theta1 = thetaNext;
+                y1 = simulateZeroShot(theta1);
+            }
+            return theta1;
+        }
+
+        function simulateTrajectory(p) {
+            const theta_LOS = Math.atan2(p.elev, p.dist);
+            const R_horiz = p.dist * Math.cos(theta_LOS);
+
+            const theta_zero = calculateStandardZeroAngle(p, R_horiz);
+
+            const theta_barrel = theta_LOS + theta_zero + p.turretElev * 0.001;
+            const psi_barrel = p.turretWind * 0.001;
+
+            let state = {
+                t: 0, x: 0, y: 0, z: 0,
+                vx: p.v0 * Math.cos(theta_barrel) * Math.cos(psi_barrel),
+                vy: p.v0 * Math.sin(theta_barrel),
+                vz: p.v0 * Math.cos(theta_barrel) * Math.sin(psi_barrel)
+            };
+
+            const dt = 0.002;
+            const traj = [{ ...state, Mach: p.v0 / 340, Cd: p.cd, v_abs: p.v0 }];
+
+            while (state.x < R_horiz && state.y > -500 && state.t < 10) {
+                state = { t: state.t + dt, ...rk4Step3D(state.x, state.y, state.z, state.vx, state.vy, state.vz, state.t, dt, p) };
+                traj.push(state);
+            }
+
+            let hit = { ...traj[traj.length - 1] };
+            if (traj.length >= 2) {
+                const p1 = traj[traj.length - 2], p2 = traj[traj.length - 1];
+                const alpha = (R_horiz - p1.x) / (p2.x - p1.x);
+                hit = {
+                    t: p1.t + alpha * (p2.t - p1.t),
+                    x: R_horiz,
+                    y: p1.y + alpha * (p2.y - p1.y),
+                    z: p1.z + alpha * (p2.z - p1.z),
+                    dy: (p1.y + alpha * (p2.y - p1.y)) - p.elev,
+                    dz: (p1.z + alpha * (p2.z - p1.z)) - 0
+                };
+                hit.missR = Math.hypot(hit.dy, hit.dz);
+                hit.isHit = hit.missR <= 0.5;
+            }
+
+            return { traj, hit, R_horiz, flightTime: hit.t };
+        }
+
+        function runSimulations() {
+            readState(1, state1);
+            readState(2, state2);
+
+            sim1 = simulateTrajectory(state1);
+            sim2 = simulateTrajectory(state2);
+
+            drawAll();
+        }
+
+        function drawScope(cCtx, cCanvas, p, simRes, anim, colorTheme) {
+            cCtx.clearRect(0, 0, cCanvas.width, cCanvas.height);
+
+            const w = cCanvas.width, h = cCanvas.height;
+            const cx = w / 2, cy = h / 2 + anim.recoil;
+            const R_glass = Math.min(w, h) * 0.44;
+
+            cCtx.save();
+            cCtx.beginPath();
+            cCtx.arc(cx, cy, R_glass, 0, 2 * Math.PI);
+            cCtx.clip();
+
+            const skyGrad = cCtx.createLinearGradient(0, cy - R_glass, 0, cy + R_glass);
+            skyGrad.addColorStop(0, '#38bdf8');
+            skyGrad.addColorStop(0.55, '#bae6fd');
+            skyGrad.addColorStop(0.56, '#15803d');
+            skyGrad.addColorStop(1, '#14532d');
+            cCtx.fillStyle = skyGrad;
+            cCtx.fillRect(cx - R_glass, cy - R_glass, 2 * R_glass, 2 * R_glass);
+
+            const pixPerMil = (R_glass * p.zoom) / 45.0;
+
+            let targetX, targetY, impactX, impactY;
+
+            if (p.fixCrosshair) {
+                // Fix crosshair mode: crosshair targeted at center of target, hit mark moves based on turrets & ballistics
+                targetX = cx;
+                targetY = cy;
+                if (simRes.hit) {
+                    const hit = simRes.hit;
+                    impactX = cx + (hit.dz / p.dist * 1000) * pixPerMil;
+                    impactY = cy - (hit.dy / p.dist * 1000) * pixPerMil;
+                }
+            } else {
+                // Dynamic reticle holdover mode: target moves as turrets dial
+                targetX = cx - (p.turretWind) * pixPerMil;
+                targetY = cy + (p.turretElev) * pixPerMil;
+                if (simRes.hit) {
+                    const hit = simRes.hit;
+                    impactX = targetX + (hit.dz / p.dist * 1000) * pixPerMil;
+                    impactY = targetY - (hit.dy / p.dist * 1000) * pixPerMil;
+                }
+            }
+
+            const targetMilSize = (1.0 / p.dist) * 1000;
+            const targetPixR = Math.max(2, (targetMilSize * pixPerMil) / 2);
+
+            cCtx.strokeStyle = '#334155';
+            cCtx.lineWidth = Math.max(1, targetPixR * 0.3);
+            cCtx.beginPath();
+            cCtx.moveTo(targetX, targetY);
+            cCtx.lineTo(targetX, targetY + targetPixR * 3);
+            cCtx.stroke();
+
+            const rings = ['#ffffff', '#000000', '#0284c7', '#ef4444', '#f59e0b'];
+            for (let i = rings.length - 1; i >= 0; i--) {
+                cCtx.fillStyle = rings[i];
+                cCtx.beginPath();
+                cCtx.arc(targetX, targetY, (targetPixR * (i + 1)) / 5, 0, 2 * Math.PI);
+                cCtx.fill();
+            }
+
+            if (simRes.hit) {
+                const hit = simRes.hit;
+
+                cCtx.fillStyle = '#000000';
+                cCtx.beginPath();
+                cCtx.arc(impactX, impactY, Math.max(2, targetPixR * 0.12), 0, 2 * Math.PI);
+                cCtx.fill();
+                cCtx.strokeStyle = '#ffffff';
+                cCtx.lineWidth = 1;
+                cCtx.stroke();
+
+                if (!hit.isHit) {
+                    cCtx.strokeStyle = '#ef4444';
+                    cCtx.fillStyle = '#ef4444';
+                    cCtx.lineWidth = 2.5;
+
+                    cCtx.beginPath();
+                    cCtx.moveTo(targetX, targetY);
+                    cCtx.lineTo(impactX, impactY);
+                    cCtx.stroke();
+
+                    const angle = Math.atan2(impactY - targetY, impactX - targetX);
+                    const headLen = 8;
+                    cCtx.beginPath();
+                    cCtx.moveTo(impactX, impactY);
+                    cCtx.lineTo(impactX - headLen * Math.cos(angle - Math.PI / 6), impactY - headLen * Math.sin(angle - Math.PI / 6));
+                    cCtx.lineTo(impactX - headLen * Math.cos(angle + Math.PI / 6), impactY - headLen * Math.sin(angle + Math.PI / 6));
+                    cCtx.closePath();
+                    cCtx.fill();
+                }
+            }
+
+            cCtx.strokeStyle = '#0f172a';
+            cCtx.lineWidth = 1.5;
+
+            cCtx.beginPath();
+            cCtx.moveTo(cx - R_glass, cy); cCtx.lineTo(cx + R_glass, cy);
+            cCtx.moveTo(cx, cy - R_glass); cCtx.lineTo(cx, cy + R_glass);
+            cCtx.stroke();
+
+            cCtx.fillStyle = '#0f172a';
+            for (let mil = -15; mil <= 15; mil += 1) {
+                if (mil === 0) continue;
+                let mx = cx + mil * pixPerMil;
+                let my = cy + mil * pixPerMil;
+
+                if (Math.abs(mil) % 5 === 0) {
+                    cCtx.lineWidth = 2;
+                    cCtx.beginPath();
+                    cCtx.moveTo(mx, cy - 6); cCtx.lineTo(mx, cy + 6);
+                    cCtx.moveTo(cx - 6, my); cCtx.lineTo(cx + 6, my);
+                    cCtx.stroke();
+
+                    cCtx.font = 'bold 9px monospace';
+                    cCtx.fillText(`${Math.abs(mil)}`, mx - 3, cy + 16);
+                } else {
+                    cCtx.beginPath(); cCtx.arc(mx, cy, 2, 0, 2 * Math.PI); cCtx.fill();
+                    cCtx.beginPath(); cCtx.arc(cx, my, 2, 0, 2 * Math.PI); cCtx.fill();
+                }
+            }
+
+            cCtx.restore();
+
+            cCtx.strokeStyle = '#0f172a';
+            cCtx.lineWidth = (w - 2 * R_glass) / 2 + 10;
+            cCtx.beginPath();
+            cCtx.arc(cx, cy, R_glass + cCtx.lineWidth / 2, 0, 2 * Math.PI);
+            cCtx.stroke();
+
+            cCtx.strokeStyle = '#334155';
+            cCtx.lineWidth = 4;
+            cCtx.beginPath();
+            cCtx.arc(cx, cy, R_glass, 0, 2 * Math.PI);
+            cCtx.stroke();
+        }
+
+        // Top View Trajectories with Axis Ticks & Tick Labels
+        function drawTopView() {
+            ctxTop.clearRect(0, 0, canvasTop.width, canvasTop.height);
+
+            const w = canvasTop.width, h = canvasTop.height;
+            const padT = 30, padB = 40, padL = 55, padR = 25;
+
+            const maxR = isSingleViewMode ? (sim1.R_horiz || 800) : Math.max(sim1.R_horiz || 800, sim2.R_horiz || 800);
+            
+            let maxDriftRaw = 0.5;
+            if (sim1.traj) sim1.traj.forEach(p => maxDriftRaw = Math.max(maxDriftRaw, Math.abs(p.z)));
+            if (!isSingleViewMode && sim2.traj) sim2.traj.forEach(p => maxDriftRaw = Math.max(maxDriftRaw, Math.abs(p.z)));
+
+            let maxDrift = 0.5;
+            if (maxDriftRaw > 5) maxDrift = Math.ceil(maxDriftRaw);
+            else if (maxDriftRaw > 2) maxDrift = Math.ceil(maxDriftRaw * 2) / 2;
+            else if (maxDriftRaw > 1) maxDrift = Math.ceil(maxDriftRaw * 5) / 5;
+            else maxDrift = Math.ceil(maxDriftRaw * 10) / 10;
+            maxDrift = Math.max(0.5, maxDrift);
+
+            const scaleY = (h - padT - padB) / maxR;
+            const scaleX = (w - padL - padR) / (2 * maxDrift * 1.15);
+            const cx = padL + (w - padL - padR) / 2;
+
+            function toScreen(x, z) {
+                return {
+                    sx: cx + z * scaleX,
+                    sy: h - padB - x * scaleY
+                };
+            }
+
+            ctxTop.lineWidth = 1;
+            ctxTop.font = '10px monospace';
+            
+            let distStep = 200;
+            if (maxR <= 400) distStep = 50;
+            else if (maxR <= 800) distStep = 100;
+            else if (maxR <= 1500) distStep = 200;
+            else distStep = 400;
+
+            // Y-axis line (Distance)
+            ctxTop.strokeStyle = '#334155';
+            ctxTop.beginPath();
+            ctxTop.moveTo(padL, padT);
+            ctxTop.lineTo(padL, h - padB);
+            ctxTop.stroke();
+
+            // Distance Ticks & Gridlines
+            for (let r = 0; r <= maxR; r += distStep) {
+                let sy = h - padB - r * scaleY;
+                
+                ctxTop.strokeStyle = 'rgba(51, 65, 85, 0.4)';
+                ctxTop.beginPath();
+                ctxTop.moveTo(padL, sy);
+                ctxTop.lineTo(w - padR, sy);
+                ctxTop.stroke();
+
+                ctxTop.strokeStyle = '#64748b';
+                ctxTop.beginPath();
+                ctxTop.moveTo(padL - 5, sy);
+                ctxTop.lineTo(padL, sy);
+                ctxTop.stroke();
+
+                ctxTop.fillStyle = '#94a3b8';
+                ctxTop.textAlign = 'right';
+                ctxTop.fillText(`${r}m`, padL - 8, sy + 3);
+            }
+
+            // Center Zero Line (Z = 0)
+            ctxTop.strokeStyle = 'rgba(56, 189, 248, 0.3)';
+            ctxTop.beginPath();
+            ctxTop.setLineDash([4, 4]);
+            ctxTop.moveTo(cx, padT);
+            ctxTop.lineTo(cx, h - padB);
+            ctxTop.stroke();
+            ctxTop.setLineDash([]);
+
+            // X-axis line (Drift Z)
+            ctxTop.strokeStyle = '#334155';
+            ctxTop.beginPath();
+            ctxTop.moveTo(padL, h - padB);
+            ctxTop.lineTo(w - padR, h - padB);
+            ctxTop.stroke();
+
+            // Drift Ticks & Gridlines
+            let driftStep = maxDrift / 2;
+            if (maxDrift <= 0.5) driftStep = 0.2;
+            else if (maxDrift <= 1.0) driftStep = 0.5;
+            else if (maxDrift <= 2.5) driftStep = 1.0;
+            else if (maxDrift <= 5.0) driftStep = 2.0;
+
+            for (let z = -maxDrift; z <= maxDrift + 0.001; z += driftStep) {
+                let zVal = Math.abs(z) < 0.001 ? 0 : z;
+                let sx = cx + zVal * scaleX;
+                if (sx < padL - 2 || sx > w - padR + 2) continue;
+
+                if (zVal !== 0) {
+                    ctxTop.strokeStyle = 'rgba(51, 65, 85, 0.4)';
+                    ctxTop.beginPath();
+                    ctxTop.moveTo(sx, padT);
+                    ctxTop.lineTo(sx, h - padB);
+                    ctxTop.stroke();
+                }
+
+                ctxTop.strokeStyle = '#64748b';
+                ctxTop.beginPath();
+                ctxTop.moveTo(sx, h - padB);
+                ctxTop.lineTo(sx, h - padB + 5);
+                ctxTop.stroke();
+
+                ctxTop.fillStyle = '#94a3b8';
+                ctxTop.textAlign = 'center';
+                let labelText = zVal === 0 ? '0' : `${zVal > 0 ? '+' : ''}${zVal.toFixed(1)}m`;
+                ctxTop.fillText(labelText, sx, h - padB + 16);
+            }
+
+            // Target Line
+            let targetSy = h - padB - maxR * scaleY;
+            ctxTop.strokeStyle = '#ef4444';
+            ctxTop.lineWidth = 1.5;
+            ctxTop.beginPath();
+            ctxTop.moveTo(cx - 20, targetSy);
+            ctxTop.lineTo(cx + 20, targetSy);
+            ctxTop.stroke();
+
+            // Axis Titles
+            ctxTop.fillStyle = '#64748b';
+            ctxTop.font = 'bold 9px monospace';
+            ctxTop.textAlign = 'left';
+            ctxTop.fillText('DIST (m)', 5, padT - 10);
+
+            ctxTop.textAlign = 'center';
+            ctxTop.fillText('LATERAL DRIFT Z (m)', cx, h - 5);
+
+            // Scope 1 Trajectory (Cyan)
+            if (sim1.traj) {
+                ctxTop.strokeStyle = '#38bdf8';
+                ctxTop.lineWidth = 3;
+                ctxTop.beginPath();
+                sim1.traj.forEach((pt, i) => {
+                    let sp = toScreen(pt.x, pt.z);
+                    if (i === 0) ctxTop.moveTo(sp.sx, sp.sy);
+                    else ctxTop.lineTo(sp.sx, sp.sy);
+                });
+                ctxTop.stroke();
+            }
+
+            // Scope 2 Trajectory (Amber)
+            if (!isSingleViewMode && sim2.traj) {
+                ctxTop.strokeStyle = '#f59e0b';
+                ctxTop.lineWidth = 3;
+                ctxTop.beginPath();
+                sim2.traj.forEach((pt, i) => {
+                    let sp = toScreen(pt.x, pt.z);
+                    if (i === 0) ctxTop.moveTo(sp.sx, sp.sy);
+                    else ctxTop.lineTo(sp.sx, sp.sy);
+                });
+                ctxTop.stroke();
+            }
+        }
+
+        // Side View Trajectories with Axis Ticks & Tick Labels
+        function drawSideView() {
+            ctxSide.clearRect(0, 0, canvasSide.width, canvasSide.height);
+
+            const w = canvasSide.width, h = canvasSide.height;
+            const padL = 55, padR = 25, padT = 20, padB = 35;
+
+            const maxR = isSingleViewMode ? (sim1.R_horiz || 800) : Math.max(sim1.R_horiz || 800, sim2.R_horiz || 800);
+            
+            let minY = -1, maxY = 2;
+            if (sim1.traj) sim1.traj.forEach(p => { minY = Math.min(minY, p.y); maxY = Math.max(maxY, p.y); });
+            if (!isSingleViewMode && sim2.traj) sim2.traj.forEach(p => { minY = Math.min(minY, p.y); maxY = Math.max(maxY, p.y); });
+
+            minY = Math.floor(minY - 0.5);
+            maxY = Math.ceil(maxY + 0.5);
+
+            const scaleX = (w - padL - padR) / maxR;
+            const scaleY = (h - padT - padB) / (maxY - minY);
+
+            function toScreen(x, y) {
+                return {
+                    sx: padL + x * scaleX,
+                    sy: h - padB - (y - minY) * scaleY
+                };
+            }
+
+            ctxSide.lineWidth = 1;
+            ctxSide.font = '10px monospace';
+
+            // X-axis baseline (Distance)
+            ctxSide.strokeStyle = '#334155';
+            ctxSide.beginPath();
+            ctxSide.moveTo(padL, h - padB);
+            ctxSide.lineTo(w - padR, h - padB);
+            ctxSide.stroke();
+
+            // Distance Ticks & Vertical Gridlines
+            let distStep = 200;
+            if (maxR <= 400) distStep = 50;
+            else if (maxR <= 800) distStep = 100;
+            else if (maxR <= 1500) distStep = 200;
+            else distStep = 400;
+
+            for (let r = 0; r <= maxR; r += distStep) {
+                let sx = padL + r * scaleX;
+                
+                ctxSide.strokeStyle = 'rgba(51, 65, 85, 0.4)';
+                ctxSide.beginPath();
+                ctxSide.moveTo(sx, padT);
+                ctxSide.lineTo(sx, h - padB);
+                ctxSide.stroke();
+
+                ctxSide.strokeStyle = '#64748b';
+                ctxSide.beginPath();
+                ctxSide.moveTo(sx, h - padB);
+                ctxSide.lineTo(sx, h - padB + 5);
+                ctxSide.stroke();
+
+                ctxSide.fillStyle = '#94a3b8';
+                ctxSide.textAlign = 'center';
+                ctxSide.fillText(`${r}m`, sx, h - padB + 16);
+            }
+
+            // Y-axis baseline (Height)
+            ctxSide.strokeStyle = '#334155';
+            ctxSide.beginPath();
+            ctxSide.moveTo(padL, padT);
+            ctxSide.lineTo(padL, h - padB);
+            ctxSide.stroke();
+
+            // Line of Sight (Y = 0)
+            let losSy = toScreen(0, 0).sy;
+            if (losSy >= padT && losSy <= h - padB) {
+                ctxSide.strokeStyle = 'rgba(56, 189, 248, 0.3)';
+                ctxSide.beginPath();
+                ctxSide.setLineDash([4, 4]);
+                ctxSide.moveTo(padL, losSy);
+                ctxSide.lineTo(w - padR, losSy);
+                ctxSide.stroke();
+                ctxSide.setLineDash([]);
+            }
+
+            // Height Y Ticks & Horizontal Gridlines
+            let rangeY = maxY - minY;
+            let yStep = 1;
+            if (rangeY <= 3) yStep = 0.5;
+            else if (rangeY <= 8) yStep = 1;
+            else if (rangeY <= 20) yStep = 2;
+            else if (rangeY <= 50) yStep = 5;
+            else yStep = 10;
+
+            let startYTick = Math.ceil(minY / yStep) * yStep;
+            for (let yVal = startYTick; yVal <= maxY; yVal += yStep) {
+                let sy = toScreen(0, yVal).sy;
+                if (sy < padT - 2 || sy > h - padB + 2) continue;
+
+                if (Math.abs(yVal) > 0.001) {
+                    ctxSide.strokeStyle = 'rgba(51, 65, 85, 0.4)';
+                    ctxSide.beginPath();
+                    ctxSide.moveTo(padL, sy);
+                    ctxSide.lineTo(w - padR, sy);
+                    ctxSide.stroke();
+                }
+
+                ctxSide.strokeStyle = '#64748b';
+                ctxSide.beginPath();
+                ctxSide.moveTo(padL - 5, sy);
+                ctxSide.lineTo(padL, sy);
+                ctxSide.stroke();
+
+                ctxSide.fillStyle = '#94a3b8';
+                ctxSide.textAlign = 'right';
+                let labelText = Math.abs(yVal) < 0.001 ? '0' : `${yVal > 0 ? '+' : ''}${yVal.toFixed(yStep < 1 ? 1 : 0)}m`;
+                ctxSide.fillText(labelText, padL - 8, sy + 3);
+            }
+
+            // Axis Titles
+            ctxSide.fillStyle = '#64748b';
+            ctxSide.font = 'bold 9px monospace';
+            ctxSide.textAlign = 'left';
+            ctxSide.fillText('HEIGHT Y (m)', 5, padT - 8);
+
+            ctxSide.textAlign = 'right';
+            ctxSide.fillText('DISTANCE (m)', w - padR, h - 5);
+
+            // Scope 1 Trajectory Curve (Cyan)
+            if (sim1.traj) {
+                ctxSide.strokeStyle = '#38bdf8';
+                ctxSide.lineWidth = 3.5;
+                ctxSide.beginPath();
+                sim1.traj.forEach((pt, i) => {
+                    let sp = toScreen(pt.x, pt.y);
+                    if (i === 0) ctxSide.moveTo(sp.sx, sp.sy);
+                    else ctxSide.lineTo(sp.sx, sp.sy);
+                });
+                ctxSide.stroke();
+            }
+
+            // Scope 2 Trajectory Curve (Amber)
+            if (!isSingleViewMode && sim2.traj) {
+                ctxSide.strokeStyle = '#f59e0b';
+                ctxSide.lineWidth = 3.5;
+                ctxSide.beginPath();
+                sim2.traj.forEach((pt, i) => {
+                    let sp = toScreen(pt.x, pt.y);
+                    if (i === 0) ctxSide.moveTo(sp.sx, sp.sy);
+                    else ctxSide.lineTo(sp.sx, sp.sy);
+                });
+                ctxSide.stroke();
+            }
+        }
+
+        function updateBadges() {
+            [1, 2].forEach(id => {
+                const sim = id === 1 ? sim1 : sim2;
+                const badge = document.getElementById(`badge-${id}`);
+                if (sim.hit) {
+                    const h = sim.hit;
+                    const missText = `${h.missR.toFixed(2)}m (${h.dy >= 0 ? '+' : ''}${h.dy.toFixed(2)}m V, ${h.dz >= 0 ? '+' : ''}${h.dz.toFixed(2)}m H)`;
+                    if (h.isHit) {
+                        badge.style.borderColor = 'var(--success-color)';
+                        badge.style.color = 'var(--success-color)';
+                        badge.innerHTML = `<strong>TARGET HIT!</strong> • Flight Time: ${h.t.toFixed(2)}s • Off: ${missText}`;
+                    } else {
+                        badge.style.borderColor = 'var(--danger-color)';
+                        badge.style.color = 'var(--danger-color)';
+                        badge.innerHTML = `<strong>MISS!</strong> • Off: ${missText} • Flight Time: ${h.t.toFixed(2)}s`;
+                    }
+                }
+            });
+        }
+
+        function drawAll() {
+            drawScope(ctxS1, canvasS1, state1, sim1, animState1, 'cyan');
+            if (!isSingleViewMode) {
+                drawScope(ctxS2, canvasS2, state2, sim2, animState2, 'amber');
+            }
+            drawTopView();
+            drawSideView();
+            updateBadges();
+        }
+
+        function fireRifle(id) {
+            runSimulations();
+            const anim = id === 1 ? animState1 : animState2;
+            const sim = id === 1 ? sim1 : sim2;
+
+            anim.active = true;
+            anim.startTime = performance.now();
+            const duration = Math.max(1000, sim.flightTime * 1000);
+
+            function loop(now) {
+                const elapsed = now - anim.startTime;
+                const progress = Math.min(1.0, elapsed / duration);
+
+                if (progress < 0.15) {
+                    anim.recoil = -25 * Math.sin((progress / 0.15) * Math.PI);
+                } else {
+                    anim.recoil = 0;
+                }
+
+                drawAll();
+
+                if (progress < 1.0) {
+                    requestAnimationFrame(loop);
+                } else {
+                    anim.active = false;
+                    anim.recoil = 0;
+                    drawAll();
+                }
+            }
+            requestAnimationFrame(loop);
+        }
+
+        function stepTurret(id, type, dir) {
+            const el = document.getElementById(`t-${type}-${id}`);
+            el.value = (parseFloat(el.value) + dir * 0.1).toFixed(1);
+            runSimulations();
+        }
+
+        // Toggle Single / Dual View Mode
+        document.getElementById('btn-toggle-view').addEventListener('click', () => {
+            isSingleViewMode = !isSingleViewMode;
+            const grid = document.getElementById('main-grid');
+            const btn = document.getElementById('btn-toggle-view');
+
+            if (isSingleViewMode) {
+                grid.classList.add('single-mode');
+                btn.innerText = 'Switch to Dual View';
+            } else {
+                grid.classList.remove('single-mode');
+                btn.innerText = 'Switch to Single View';
+            }
+            resizeCanvases();
+        });
+
+        [1, 2].forEach(id => {
+            const inputs = ['v0', 'cal', 'cd', 'twist', 'temp', 'alt', 'wind', 'wangle', 'lat', 'az', 'dist', 'elev', 'zoom', 't-elev', 't-wind'];
+            inputs.forEach(name => {
+                const el = document.getElementById(`${name}-${id}`);
+                if (el) el.addEventListener('input', runSimulations);
+            });
+            document.getElementById(`mass-log-${id}`).addEventListener('input', runSimulations);
+
+            document.getElementById(`preset-${id}`).addEventListener('change', (e) => {
+                const p = RIFLE_PRESETS[e.target.value];
+                if (p) {
+                    document.getElementById(`v0-${id}`).value = p.v0;
+                    document.getElementById(`mass-log-${id}`).value = massToLogSlider(p.mass);
+                    document.getElementById(`cal-${id}`).value = p.cal;
+                    document.getElementById(`cd-${id}`).value = p.cd;
+                    document.getElementById(`twist-${id}`).value = p.twist;
+                    runSimulations();
+                }
+            });
+
+            document.getElementById(`btn-fire-${id}`).addEventListener('click', () => fireRifle(id));
+        });
+
+        document.getElementById('btn-sync-1').addEventListener('click', () => {
+            const keys = ['v0', 'cal', 'cd', 'twist', 'temp', 'alt', 'wind', 'wangle', 'lat', 'az', 'dist', 'elev', 'zoom', 't-elev', 't-wind'];
+            keys.forEach(k => document.getElementById(`${k}-2`).value = document.getElementById(`${k}-1`).value);
+            document.getElementById('mass-log-2').value = document.getElementById('mass-log-1').value;
+            runSimulations();
+        });
+
+        document.getElementById('btn-sync-2').addEventListener('click', () => {
+            const keys = ['v0', 'cal', 'cd', 'twist', 'temp', 'alt', 'wind', 'wangle', 'lat', 'az', 'dist', 'elev', 'zoom', 't-elev', 't-wind'];
+            keys.forEach(k => document.getElementById(`${k}-1`).value = document.getElementById(`${k}-2`).value);
+            document.getElementById('mass-log-1').value = document.getElementById('mass-log-1').value;
+            runSimulations();
+        });
+
+        document.getElementById('btn-fire-both').addEventListener('click', () => {
+            fireRifle(1);
+            if (!isSingleViewMode) fireRifle(2);
+        });
+
+        function resizeCanvases() {
+            [canvasS1, canvasS2, canvasTop, canvasSide].forEach(c => {
+                if (c && c.parentElement) {
+                    c.width = c.parentElement.clientWidth;
+                    c.height = c.parentElement.clientHeight;
+                }
+            });
+            drawAll();
+        }
+
+        window.addEventListener('resize', resizeCanvases);
+
+        // App Initialization
+        resizeCanvases();
+        runSimulations();
+    </script>
+</body>
+</html>
