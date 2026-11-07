@@ -169,7 +169,29 @@
             width: 100%;
         }
 
-        /* Top Overview Bar - Aggressively Compact */
+        /* Workspace Layout (Main Panel - Placed at Top) */
+        #workspace { 
+            flex: 1; 
+            display: flex; 
+            gap: 0.5rem; 
+            min-height: 0; 
+            position: relative; 
+            width: 100%;
+        }
+        
+        #canvas-container {
+            flex: 1; 
+            background-color: #020617; 
+            border: 1px solid var(--border-color);
+            border-radius: 6px; 
+            position: relative; 
+            overflow: hidden;
+            min-height: 180px;
+            width: 100%;
+        }
+        canvas { width: 100%; height: 100%; display: block; }
+
+        /* Overview Panel (Live Data & Gauges - Placed Below Main Panel) */
         #top-overview { 
             display: flex; 
             gap: 0.5rem; 
@@ -242,32 +264,10 @@
             top: 50%; transform: translateY(-50%); pointer-events: none; line-height: 1.1;
         }
 
-        /* Compact Number Cards replacing gauges on mobile */
+        /* Compact Number Cards replacing diagrams on mobile */
         #compact-gauges-mobile {
             display: none;
         }
-
-        /* Workspace Layout */
-        #workspace { 
-            flex: 1; 
-            display: flex; 
-            gap: 0.5rem; 
-            min-height: 0; 
-            position: relative; 
-            width: 100%;
-        }
-        
-        #canvas-container {
-            flex: 1; 
-            background-color: #020617; 
-            border: 1px solid var(--border-color);
-            border-radius: 6px; 
-            position: relative; 
-            overflow: hidden;
-            min-height: 180px;
-            width: 100%;
-        }
-        canvas { width: 100%; height: 100%; display: block; }
 
         /* Supplementary Diagnostic Side Panel */
         #side-plots-panel {
@@ -571,6 +571,30 @@
     </div>
 
     <div id="main-content">
+        <!-- Main Workspace (Trajectory Canvas Window) placed at top -->
+        <div id="workspace">
+            <div id="canvas-container">
+                <canvas id="canvas"></canvas>
+            </div>
+
+            <!-- Toggleable Real-Time Diagnostic Side Panel -->
+            <div id="side-plots-panel">
+                <div class="plot-box">
+                    <div class="plot-title"><i>v</i>(<i>t</i>) / <i>v</i>(<i>x</i>)</div>
+                    <div class="plot-canvas-wrap">
+                        <canvas id="canvas-v-dist"></canvas>
+                    </div>
+                </div>
+                <div class="plot-box">
+                    <div class="plot-title"><i>E</i>(<i>t</i>) / <i>E</i>(<i>x</i>)</div>
+                    <div class="plot-canvas-wrap">
+                        <canvas id="canvas-e-dist"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Overview Bar with Live Metrics & Data Gauges placed BELOW main workspace panel -->
         <div id="top-overview">
             <div id="metrics-bar">
                 <div class="metric-card">
@@ -626,28 +650,6 @@
                 <div class="compact-gauge-item">
                     <span class="cg-title">Energy</span>
                     <span class="cg-val" id="cg-val-e">3.20 kJ (100%)</span>
-                </div>
-            </div>
-        </div>
-
-        <div id="workspace">
-            <div id="canvas-container">
-                <canvas id="canvas"></canvas>
-            </div>
-
-            <!-- Toggleable Real-Time Diagnostic Side Panel -->
-            <div id="side-plots-panel">
-                <div class="plot-box">
-                    <div class="plot-title"><i>v</i>(<i>t</i>) / <i>v</i>(<i>x</i>)</div>
-                    <div class="plot-canvas-wrap">
-                        <canvas id="canvas-v-dist"></canvas>
-                    </div>
-                </div>
-                <div class="plot-box">
-                    <div class="plot-title"><i>E</i>(<i>t</i>) / <i>E</i>(<i>x</i>)</div>
-                    <div class="plot-canvas-wrap">
-                        <canvas id="canvas-e-dist"></canvas>
-                    </div>
                 </div>
             </div>
         </div>
