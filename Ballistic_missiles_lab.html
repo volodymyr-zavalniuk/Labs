@@ -1,0 +1,1625 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>2D Unguided Ballistic Missile Trajectory Simulator</title>
+    <style>
+        :root {
+            --bg-color: #0b0f19;
+            --panel-bg: #151c2c;
+            --card-bg: #1e293b;
+            --accent-cyan: #38bdf8;
+            --accent-amber: #f59e0b;
+            --text-main: #f8fafc;
+            --text-muted: #94a3b8;
+            --border-color: #334155;
+            --success-color: #22c55e;
+            --danger-color: #ef4444;
+            --powered-color: #ffffff;
+            --hypersonic-color: #ef4444;
+            --supersonic-color: #f97316;
+            --transonic-color: #eab308;
+            --subsonic-color: #3b82f6;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            user-select: none;
+        }
+
+        html {
+            font-size: clamp(12px, 0.85vw + 0.4vh, 16px);
+        }
+
+        body {
+            background-color: var(--bg-color);
+            color: var(--text-main);
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+
+        header {
+            min-height: 50px;
+            background-color: var(--panel-bg);
+            border-bottom: 1px solid var(--border-color);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 6px 14px;
+            flex-shrink: 0;
+            gap: 10px;
+            z-index: 10;
+        }
+
+        .header-title {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .header-title h1 {
+            font-size: 1.05rem;
+            font-weight: 700;
+            color: var(--accent-cyan);
+            letter-spacing: 0.03em;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .header-title span {
+            font-size: 0.72rem;
+            color: var(--text-muted);
+            font-weight: 400;
+        }
+
+        .header-controls {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            flex-wrap: wrap;
+        }
+
+        .preset-select {
+            background: var(--card-bg);
+            border: 1px solid var(--border-color);
+            color: var(--text-main);
+            padding: 5px 10px;
+            border-radius: 6px;
+            font-size: 0.8rem;
+            font-weight: 600;
+            outline: none;
+            cursor: pointer;
+        }
+
+        .preset-select:focus {
+            border-color: var(--accent-cyan);
+        }
+
+        .btn-action {
+            background: var(--card-bg);
+            border: 1px solid var(--border-color);
+            color: var(--text-main);
+            font-weight: 600;
+            padding: 5px 12px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 0.78rem;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            transition: all 0.2s;
+        }
+
+        .btn-action:hover {
+            background: #334155;
+            border-color: var(--accent-cyan);
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #0284c7, #2563eb);
+            color: #ffffff;
+            border: none;
+            box-shadow: 0 0 10px rgba(56, 189, 248, 0.25);
+        }
+
+        .btn-primary:hover {
+            background: linear-gradient(135deg, #0369a1, #1d4ed8);
+        }
+
+        .btn-success {
+            background: linear-gradient(135deg, #15803d, #22c55e);
+            color: #ffffff;
+            border: none;
+        }
+
+        .btn-danger {
+            background: linear-gradient(135deg, #b91c1c, #ef4444);
+            color: #ffffff;
+            border: none;
+        }
+
+        #app-grid {
+            flex: 1;
+            display: grid;
+            grid-template-columns: 1fr 340px;
+            gap: 8px;
+            padding: 8px;
+            min-height: 0;
+            position: relative;
+        }
+
+        @media (max-width: 1366px) {
+            #app-grid {
+                grid-template-columns: 1fr 310px;
+                gap: 6px;
+                padding: 6px;
+            }
+        }
+
+        @media (max-width: 920px) {
+            body {
+                height: auto;
+                min-height: 100vh;
+                overflow-x: hidden;
+                overflow-y: auto;
+            }
+            #app-grid {
+                display: flex;
+                flex-direction: column;
+                height: auto;
+                min-height: calc(100vh - 50px);
+            }
+            .scope-container {
+                height: 55vh;
+                min-height: 350px;
+                flex-shrink: 0;
+            }
+            .side-panel {
+                height: auto;
+                overflow-y: visible;
+                flex: none;
+            }
+        }
+
+        .scope-container {
+            background-color: var(--panel-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            position: relative;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+
+        .telemetry-bar {
+            background: rgba(15, 23, 42, 0.9);
+            border-bottom: 1px solid var(--border-color);
+            padding: 6px 12px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            flex-wrap: wrap;
+            gap: 8px;
+            font-size: 0.75rem;
+            z-index: 5;
+        }
+
+        .telemetry-item {
+            display: flex;
+            align-items: center;
+            gap: 4px;
+        }
+
+        .telemetry-label {
+            color: var(--text-muted);
+        }
+
+        .telemetry-value {
+            font-family: monospace;
+            font-weight: 700;
+            color: var(--accent-cyan);
+        }
+
+        .regime-badge {
+            padding: 2px 8px;
+            border-radius: 4px;
+            font-size: 0.7rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+
+        .regime-powered { background: #000; color: #fff; border: 1px solid #777; }
+        .regime-hypersonic { background: rgba(239, 68, 68, 0.2); color: #ef4444; border: 1px solid #ef4444; }
+        .regime-supersonic { background: rgba(249, 115, 22, 0.2); color: #f97316; border: 1px solid #f97316; }
+        .regime-transonic { background: rgba(234, 179, 8, 0.2); color: #eab308; border: 1px solid #eab308; }
+        .regime-subsonic { background: rgba(59, 130, 246, 0.2); color: #3b82f6; border: 1px solid #3b82f6; }
+
+        .canvas-wrap {
+            flex: 1;
+            position: relative;
+            width: 100%;
+            height: 100%;
+            background: #020617;
+            cursor: grab;
+            touch-action: none;
+        }
+
+        .canvas-wrap:active {
+            cursor: grabbing;
+        }
+
+        canvas {
+            display: block;
+            width: 100%;
+            height: 100%;
+        }
+
+        .legend-overlay {
+            position: absolute;
+            bottom: 12px;
+            left: 12px;
+            background: rgba(15, 23, 42, 0.88);
+            border: 1px solid var(--border-color);
+            border-radius: 6px;
+            padding: 8px 12px;
+            backdrop-filter: blur(4px);
+            font-size: 0.72rem;
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+            pointer-events: none;
+            z-index: 5;
+        }
+
+        .legend-title {
+            font-weight: 700;
+            color: var(--text-muted);
+            margin-bottom: 2px;
+            text-transform: uppercase;
+            font-size: 0.65rem;
+        }
+
+        .legend-item {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .legend-color {
+            width: 12px;
+            height: 4px;
+            border-radius: 2px;
+        }
+
+        .view-controls {
+            position: absolute;
+            top: 12px;
+            right: 12px;
+            display: flex;
+            gap: 4px;
+            z-index: 5;
+        }
+
+        .btn-view {
+            background: rgba(30, 41, 59, 0.85);
+            border: 1px solid var(--border-color);
+            color: var(--text-main);
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 0.7rem;
+            cursor: pointer;
+            backdrop-filter: blur(4px);
+        }
+
+        .btn-view:hover {
+            background: var(--accent-cyan);
+            color: #0f172a;
+        }
+
+        .side-panel {
+            background-color: var(--panel-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            display: flex;
+            flex-direction: column;
+            overflow-y: auto;
+            padding: 10px;
+            gap: 10px;
+        }
+
+        .panel-card {
+            background-color: var(--card-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 6px;
+            padding: 10px 12px;
+        }
+
+        .panel-card-title {
+            font-size: 0.72rem;
+            font-weight: 700;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            margin-bottom: 8px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .slider-group {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .slider-item {
+            display: flex;
+            flex-direction: column;
+            gap: 2px;
+        }
+
+        .slider-label {
+            display: flex;
+            justify-content: space-between;
+            font-size: 0.75rem;
+            color: var(--text-main);
+        }
+
+        .slider-label span.val {
+            font-family: monospace;
+            color: var(--accent-cyan);
+            font-weight: 700;
+        }
+
+        input[type=range] {
+            -webkit-appearance: none;
+            width: 100%;
+            height: 4px;
+            border-radius: 2px;
+            background: var(--border-color);
+            outline: none;
+        }
+
+        input[type=range]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            width: 14px;
+            height: 14px;
+            border-radius: 50%;
+            background: var(--accent-cyan);
+            cursor: pointer;
+            transition: transform 0.1s;
+        }
+
+        input[type=range]::-webkit-slider-thumb:hover {
+            transform: scale(1.2);
+        }
+
+        .metrics-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 6px;
+        }
+
+        .metric-box {
+            background: rgba(15, 23, 42, 0.6);
+            border: 1px solid var(--border-color);
+            border-radius: 4px;
+            padding: 6px 8px;
+        }
+
+        .metric-lbl {
+            font-size: 0.65rem;
+            color: var(--text-muted);
+            text-transform: uppercase;
+        }
+
+        .metric-val {
+            font-size: 0.85rem;
+            font-family: monospace;
+            font-weight: 700;
+            color: var(--accent-amber);
+            margin-top: 2px;
+        }
+
+        .saved-table-wrap {
+            max-height: 160px;
+            overflow-y: auto;
+            border: 1px solid var(--border-color);
+            border-radius: 4px;
+            margin-top: 6px;
+        }
+
+        table.saved-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 0.7rem;
+        }
+
+        table.saved-table th, table.saved-table td {
+            padding: 4px 6px;
+            text-align: left;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        table.saved-table th {
+            background: rgba(15, 23, 42, 0.8);
+            color: var(--accent-cyan);
+            position: sticky;
+            top: 0;
+        }
+
+        .modal-backdrop {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            background: rgba(11, 15, 25, 0.85);
+            backdrop-filter: blur(6px);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 100;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.25s ease;
+        }
+
+        .modal-backdrop.open {
+            opacity: 1;
+            pointer-events: auto;
+        }
+
+        .modal-card {
+            background: var(--panel-bg);
+            border: 1px solid var(--border-color);
+            width: 90%;
+            max-width: 700px;
+            max-height: 85vh;
+            border-radius: 10px;
+            display: flex;
+            flex-direction: column;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.6);
+            overflow: hidden;
+        }
+
+        .modal-header {
+            padding: 12px 18px;
+            background: var(--card-bg);
+            border-bottom: 1px solid var(--border-color);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .modal-header h2 {
+            font-size: 1.05rem;
+            color: var(--accent-cyan);
+        }
+
+        .btn-close {
+            background: transparent;
+            border: none;
+            color: var(--text-muted);
+            font-size: 1.4rem;
+            cursor: pointer;
+        }
+
+        .modal-body {
+            padding: 18px;
+            overflow-y: auto;
+            font-size: 0.85rem;
+            line-height: 1.5;
+            color: var(--text-main);
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Header -->
+    <header>
+        <div class="header-title">
+            <h1>🚀 2D Ballistic Missile Trajectory Simulator</h1>
+            <span>Realistic Earth-Curved Cross-Section View with ISA Atmosphere & Rotation</span>
+        </div>
+
+        <div class="header-controls">
+            <select class="preset-select" id="presetSelect" onchange="loadPreset()">
+                <option value="custom">-- Select Missile Preset --</option>
+                <option value="grad">BM-21 Grad (122mm Rocket)</option>
+                <option value="smerch">BM-30 Smerch (300mm Rocket)</option>
+                <option value="tochka">Tochka-U (SS-21 Scarab B)</option>
+                <option value="v2" selected>V-2 / Aggregat 4 Missile</option>
+                <option value="scud">Scud-B (R-17 Elbrus)</option>
+                <option value="agni">Agni-I (Single-Stage MRBM)</option>
+            </select>
+
+            <button class="btn-action btn-primary" id="btnPlay" onclick="togglePlay()">▶ Play</button>
+            <button class="btn-action" onclick="resetSim()">🔄 Reset</button>
+            <button class="btn-action btn-success" onclick="stickTrajectory()">📌 Save / Compare</button>
+            <button class="btn-action btn-danger" onclick="clearSaved()">🗑️ Clear Saved</button>
+            <button class="btn-action" onclick="toggleModal(true)">📖 Physics Info</button>
+        </div>
+    </header>
+
+    <!-- Main Content Grid -->
+    <div id="app-grid">
+        <!-- 2D Canvas Viewport -->
+        <div class="scope-container">
+            <!-- Telemetry Bar -->
+            <div class="telemetry-bar">
+                <div class="telemetry-item">
+                    <span class="telemetry-label">Time:</span>
+                    <span class="telemetry-value" id="telTime">0.0 s</span>
+                </div>
+                <div class="telemetry-item">
+                    <span class="telemetry-label">Speed:</span>
+                    <span class="telemetry-value" id="telSpeed">0 m/s (Mach 0.0)</span>
+                </div>
+                <div class="telemetry-item">
+                    <span class="telemetry-label">% Max Ek:</span>
+                    <span class="telemetry-value" id="telEk">0.0 %</span>
+                </div>
+                <div class="telemetry-item">
+                    <span class="telemetry-label">Altitude:</span>
+                    <span class="telemetry-value" id="telAlt">0.0 km</span>
+                </div>
+                <div class="telemetry-item">
+                    <span class="telemetry-label">Downrange:</span>
+                    <span class="telemetry-value" id="telRange">0.0 km</span>
+                </div>
+                <div id="telRegime" class="regime-badge regime-subsonic">SUBSONIC</div>
+            </div>
+
+            <div class="canvas-wrap" id="canvasWrap">
+                <canvas id="simCanvas"></canvas>
+
+                <!-- View Controls -->
+                <div class="view-controls">
+                    <button class="btn-view" onclick="reset2DView()">Reset View</button>
+                    <button class="btn-view" onclick="toggleTrackMissile()" id="btnTrack">Track Missile: OFF</button>
+                    <button class="btn-view" onclick="zoomView(1.25)">Zoom +</button>
+                    <button class="btn-view" onclick="zoomView(0.8)">Zoom -</button>
+                </div>
+
+                <!-- Legend -->
+                <div class="legend-overlay">
+                    <div class="legend-title">Speed Regimes</div>
+                    <div class="legend-item">
+                        <div class="legend-color" style="background:#ffffff; border:1px solid #000;"></div>
+                        <span>Black Outline: Powered Stage</span>
+                    </div>
+                    <div class="legend-item">
+                        <div class="legend-color" style="background:#ef4444;"></div>
+                        <span>Red: Hypersonic (Mach > 5)</span>
+                    </div>
+                    <div class="legend-item">
+                        <div class="legend-color" style="background:#f97316;"></div>
+                        <span>Orange: Supersonic (1.2 - 5)</span>
+                    </div>
+                    <div class="legend-item">
+                        <div class="legend-color" style="background:#eab308;"></div>
+                        <span>Yellow: Transonic (0.8 - 1.2)</span>
+                    </div>
+                    <div class="legend-item">
+                        <div class="legend-color" style="background:#3b82f6;"></div>
+                        <span>Blue: Subsonic (Mach ≤ 0.8)</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Side Panel Controls & Data -->
+        <div class="side-panel">
+            <!-- Parameters Card -->
+            <div class="panel-card">
+                <div class="panel-card-title">
+                    <span>Missile Configuration</span>
+                    <span style="color:var(--accent-cyan);" id="presetNameTag">V-2 Presets</span>
+                </div>
+
+                <div class="slider-group">
+                    <div class="slider-item">
+                        <div class="slider-label">
+                            <span>Total Mass (m₀):</span>
+                            <span class="val" id="valMass">12,500 kg</span>
+                        </div>
+                        <input type="range" id="inputMass" min="50" max="50000" step="50" value="12500" oninput="updateParams()">
+                    </div>
+
+                    <div class="slider-item">
+                        <div class="slider-label">
+                            <span>Fuel Mass (m_fuel):</span>
+                            <span class="val" id="valFuel">8,800 kg</span>
+                        </div>
+                        <input type="range" id="inputFuel" min="20" max="40000" step="50" value="8800" oninput="updateParams()">
+                    </div>
+
+                    <div class="slider-item">
+                        <div class="slider-label">
+                            <span>Diameter (D):</span>
+                            <span class="val" id="valDiam">1.65 m</span>
+                        </div>
+                        <input type="range" id="inputDiam" min="0.10" max="3.00" step="0.01" value="1.65" oninput="updateParams()">
+                    </div>
+
+                    <div class="slider-item">
+                        <div class="slider-label">
+                            <span>Engine Thrust (F):</span>
+                            <span class="val" id="valThrust">265.0 kN</span>
+                        </div>
+                        <input type="range" id="inputThrust" min="5" max="1500" step="5" value="265" oninput="updateParams()">
+                    </div>
+
+                    <div class="slider-item">
+                        <div class="slider-label">
+                            <span>Exhaust Velocity (vₑ):</span>
+                            <span class="val" id="valVe">2,050 m/s</span>
+                        </div>
+                        <input type="range" id="inputVe" min="1000" max="4500" step="10" value="2050" oninput="updateParams()">
+                    </div>
+
+                    <div class="slider-item">
+                        <div class="slider-label">
+                            <span>Launch Angle (θ):</span>
+                            <span class="val" id="valAngle">55.0°</span>
+                        </div>
+                        <input type="range" id="inputAngle" min="10" max="85" step="0.5" value="55" oninput="updateParams()">
+                    </div>
+
+                    <div class="slider-item">
+                        <div class="slider-label">
+                            <span>Launch Azimuth (ϕ):</span>
+                            <span class="val" id="valAzimuth">90.0° (East)</span>
+                        </div>
+                        <input type="range" id="inputAzimuth" min="0" max="360" step="5" value="90" oninput="updateParams()">
+                    </div>
+
+                    <div class="slider-item">
+                        <div class="slider-label">
+                            <span>Base Drag Coeff (C_d):</span>
+                            <span class="val" id="valCd">0.35</span>
+                        </div>
+                        <input type="range" id="inputCd" min="0.10" max="1.00" step="0.01" value="0.35" oninput="updateParams()">
+                    </div>
+                </div>
+            </div>
+
+            <!-- Calculated Metrics Card -->
+            <div class="panel-card" style="border-top: 3px solid var(--accent-cyan);">
+                <div class="panel-card-title">
+                    <span>Flight Calculations</span>
+                </div>
+
+                <div class="metrics-grid">
+                    <div class="metric-box">
+                        <div class="metric-lbl">Mass Flow Rate (dm/dt)</div>
+                        <div class="metric-val" id="calcDmDt">129.3 kg/s</div>
+                    </div>
+                    <div class="metric-box">
+                        <div class="metric-lbl">Burnout Speed</div>
+                        <div class="metric-val" id="calcVburn">1,540 m/s</div>
+                    </div>
+                    <div class="metric-box">
+                        <div class="metric-lbl">Time of Flight</div>
+                        <div class="metric-val" id="calcTflight">320 s</div>
+                    </div>
+                    <div class="metric-box">
+                        <div class="metric-lbl">Max Altitude</div>
+                        <div class="metric-val" id="calcApogee">96.4 km</div>
+                    </div>
+                    <div class="metric-box">
+                        <div class="metric-lbl">Total Range</div>
+                        <div class="metric-val" id="calcRange">312.5 km</div>
+                    </div>
+                    <div class="metric-box">
+                        <div class="metric-lbl">Impact Velocity</div>
+                        <div class="metric-val" id="calcVimpact">1,120 m/s</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Saved Trajectories Card -->
+            <div class="panel-card">
+                <div class="panel-card-title">
+                    <span>Saved Trajectories Comparison</span>
+                    <span id="savedCountTag" style="color:var(--accent-amber);">0 Saved</span>
+                </div>
+
+                <div class="saved-table-wrap">
+                    <table class="saved-table">
+                        <thead>
+                            <tr>
+                                <th>Name</th>
+                                <th>Angle</th>
+                                <th>Range</th>
+                                <th>Apogee</th>
+                                <th>V_burn</th>
+                            </tr>
+                        </thead>
+                        <tbody id="savedTableBody">
+                            <tr>
+                                <td colspan="5" style="text-align:center; color:var(--text-muted); padding:10px;">
+                                    No trajectories saved yet. Click "Save / Compare" to stick trajectories.
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Physics Info Modal -->
+    <div class="modal-backdrop" id="physicsModal">
+        <div class="modal-card">
+            <div class="modal-header">
+                <h2>📖 Ballistic Trajectory Physics & ISA Model</h2>
+                <button class="btn-close" onclick="toggleModal(false)">&times;</button>
+            </div>
+            <div class="modal-body">
+                <h3 style="color:var(--accent-cyan); margin-bottom:6px;">Earth Curvature & Circular Geometry</h3>
+                <p>Earth's surface is modeled as a true circle ($R_E = 6,371\text{ km}$). Altitude rings are rendered as concentric circles centered at Earth's geometric center:</p>
+                <div style="background:#020617; padding:8px; border-radius:4px; font-family:monospace; color:var(--accent-amber); margin:8px 0;">
+                    x_world(t) = (R_E + h(t)) * sin(S(t) / R_E)<br>
+                    y_world(t) = (R_E + h(t)) * cos(S(t) / R_E) - R_E
+                </div>
+
+                <h3 style="color:var(--accent-cyan); margin-top:14px; margin-bottom:6px;">Fetter Aerodynamic Drag Approximation</h3>
+                <p>Based on Steve Fetter's <em>"A Ballistic Missile Primer"</em> (1990), aerodynamic drag coefficient $C_d$ varies dynamically with Mach number ($M = v / a(h)$):</p>
+                <div style="background:#020617; padding:8px; border-radius:4px; font-family:monospace; color:var(--accent-amber); margin:8px 0;">
+                    Subsonic (M &lt; 0.8): C_d ≈ 0.15 - 0.18<br>
+                    Transonic (0.8 ≤ M ≤ 1.2): C_d peaks up to ~0.38 - 0.40 at M=1.1<br>
+                    Supersonic (1.2 &lt; M ≤ 5.0): C_d decays as ~ 0.15 + 0.23 / √M<br>
+                    Hypersonic (M &gt; 5.0): C_d asymptotes to ~0.15
+                </div>
+
+                <h3 style="color:var(--accent-cyan); margin-top:14px; margin-bottom:6px;">Thrust & Mass Flow Rate</h3>
+                <p>During the powered acceleration stage, mass flow rate is calculated directly as:</p>
+                <div style="background:#020617; padding:8px; border-radius:4px; font-family:monospace; color:var(--accent-amber); margin:8px 0;">
+                    dm/dt = Thrust / v_e
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Calibrated Presets Data
+        const PRESETS = {
+            grad: { name: 'BM-21 Grad', mass: 66.6, fuel: 20.5, diam: 0.122, thrust: 21.0, ve: 2050, angle: 45, az: 90, cd: 0.45 },
+            smerch: { name: 'BM-30 Smerch', mass: 800, fuel: 370, diam: 0.30, thrust: 310.0, ve: 2450, angle: 45, az: 90, cd: 0.40 },
+            tochka: { name: 'Tochka-U', mass: 2010, fuel: 790, diam: 0.65, thrust: 140.0, ve: 2350, angle: 55, az: 90, cd: 0.38 },
+            v2: { name: 'V-2 / A4', mass: 12500, fuel: 8800, diam: 1.65, thrust: 265.0, ve: 2050, angle: 55, az: 90, cd: 0.35 },
+            scud: { name: 'Scud-B', mass: 5900, fuel: 3700, diam: 0.88, thrust: 145.0, ve: 2260, angle: 65, az: 90, cd: 0.35 },
+            agni: { name: 'Agni-I MRBM', mass: 12000, fuel: 8600, diam: 1.00, thrust: 380.0, ve: 2600, angle: 68, az: 90, cd: 0.32 }
+        };
+
+        // Constants
+        const R_EARTH = 6371000; // m
+        const GM_EARTH = 3.986004418e14; // m^3/s^2
+        const OMEGA_EARTH = 7.292115e-5; // rad/s
+
+        // State & Simulation Variables
+        let currentParams = {};
+        let trajectoryPoints = [];
+        let flightMetrics = {};
+        let savedTrajectories = [];
+        
+        let isPlaying = false;
+        let animProgress = 0;
+        let lastTimestamp = 0;
+        let currentPointIdx = 0;
+
+        // 2D Viewport Transformation (Pan & Zoom)
+        let panX = 0;
+        let panY = 0;
+        let scale = 1.0; // pixels per meter
+        let autoFitBounds = null;
+        let trackMissile = false;
+
+        // Dragging state
+        let isDragging = false;
+        let dragStart = { x: 0, y: 0 };
+
+        // Canvas Context
+        const canvas = document.getElementById('simCanvas');
+        const ctx = canvas.getContext('2d');
+        const canvasWrap = document.getElementById('canvasWrap');
+
+        window.addEventListener('load', () => {
+            resizeCanvas();
+            loadPreset();
+            setupInteraction();
+            window.addEventListener('resize', resizeCanvas);
+            requestAnimationFrame(animateLoop);
+        });
+
+        function resizeCanvas() {
+            canvas.width = canvasWrap.clientWidth;
+            canvas.height = canvasWrap.clientHeight;
+            if (trajectoryPoints.length > 0) {
+                fitTrajectoryToView();
+            }
+        }
+
+        function setupInteraction() {
+            canvasWrap.addEventListener('mousedown', (e) => {
+                isDragging = true;
+                dragStart = { x: e.clientX - panX, y: e.clientY - panY };
+            });
+
+            window.addEventListener('mousemove', (e) => {
+                if (!isDragging) return;
+                panX = e.clientX - dragStart.x;
+                panY = e.clientY - dragStart.y;
+            });
+
+            window.addEventListener('mouseup', () => { isDragging = false; });
+
+            canvasWrap.addEventListener('wheel', (e) => {
+                e.preventDefault();
+                const zoomFactor = e.deltaY < 0 ? 1.15 : 0.85;
+                zoomViewAt(zoomFactor, e.clientX - canvasWrap.getBoundingClientRect().left, e.clientY - canvasWrap.getBoundingClientRect().top);
+            }, { passive: false });
+
+            // Touch events for mobile
+            canvasWrap.addEventListener('touchstart', (e) => {
+                if (e.touches.length === 1) {
+                    isDragging = true;
+                    dragStart = { x: e.touches[0].clientX - panX, y: e.touches[0].clientY - panY };
+                }
+            }, { passive: true });
+
+            canvasWrap.addEventListener('touchmove', (e) => {
+                if (isDragging && e.touches.length === 1) {
+                    panX = e.touches[0].clientX - dragStart.x;
+                    panY = e.touches[0].clientY - dragStart.y;
+                }
+            }, { passive: true });
+
+            canvasWrap.addEventListener('touchend', () => { isDragging = false; });
+        }
+
+        function loadPreset() {
+            const sel = document.getElementById('presetSelect').value;
+            if (sel !== 'custom' && PRESETS[sel]) {
+                const p = PRESETS[sel];
+                document.getElementById('inputMass').value = p.mass;
+                document.getElementById('inputFuel').value = p.fuel;
+                document.getElementById('inputDiam').value = p.diam;
+                document.getElementById('inputThrust').value = p.thrust;
+                document.getElementById('inputVe').value = p.ve;
+                document.getElementById('inputAngle').value = p.angle;
+                document.getElementById('inputAzimuth').value = p.az;
+                document.getElementById('inputCd').value = p.cd;
+                document.getElementById('presetNameTag').innerText = p.name;
+            } else {
+                document.getElementById('presetNameTag').innerText = 'Custom Missile';
+            }
+            updateParams();
+        }
+
+        function updateParams() {
+            const m0 = parseFloat(document.getElementById('inputMass').value);
+            let mFuel = parseFloat(document.getElementById('inputFuel').value);
+            if (mFuel >= m0) {
+                mFuel = m0 * 0.9;
+                document.getElementById('inputFuel').value = mFuel;
+            }
+
+            const diam = parseFloat(document.getElementById('inputDiam').value);
+            const thrustKN = parseFloat(document.getElementById('inputThrust').value);
+            const ve = parseFloat(document.getElementById('inputVe').value);
+            const angleDeg = parseFloat(document.getElementById('inputAngle').value);
+            const azDeg = parseFloat(document.getElementById('inputAzimuth').value);
+            const cd = parseFloat(document.getElementById('inputCd').value);
+
+            document.getElementById('valMass').innerText = `${m0.toLocaleString()} kg`;
+            document.getElementById('valFuel').innerText = `${mFuel.toLocaleString()} kg`;
+            document.getElementById('valDiam').innerText = `${diam.toFixed(2)} m`;
+            document.getElementById('valThrust').innerText = `${thrustKN.toFixed(1)} kN`;
+            document.getElementById('valVe').innerText = `${ve.toLocaleString()} m/s`;
+            document.getElementById('valAngle').innerText = `${angleDeg.toFixed(1)}°`;
+            document.getElementById('valAzimuth').innerText = `${azDeg.toFixed(0)}°`;
+            document.getElementById('valCd').innerText = cd.toFixed(2);
+
+            currentParams = {
+                m0: m0,
+                mfuel: mFuel,
+                diam: diam,
+                thrust: thrustKN * 1000,
+                ve: ve,
+                angle: angleDeg * Math.PI / 180,
+                azimuth: azDeg * Math.PI / 180,
+                baseCd: cd,
+                area: Math.PI * Math.pow(diam, 2) / 4
+            };
+
+            calculateTrajectory();
+        }
+
+        // ISA Atmosphere Model
+        function getAtmosphere(alt) {
+            if (alt < 0) alt = 0;
+            let temp, press;
+
+            if (alt < 11000) {
+                temp = 288.15 - 0.0065 * alt;
+                press = 101325 * Math.pow(temp / 288.15, 5.2561);
+            } else if (alt < 20000) {
+                temp = 216.65;
+                press = 22632 * Math.exp(-0.00015769 * (alt - 11000));
+            } else if (alt < 32000) {
+                temp = 216.65 + 0.001 * (alt - 20000);
+                press = 5474.9 * Math.pow(216.65 / temp, 34.163);
+            } else if (alt < 100000) {
+                temp = Math.max(180, 228.65 - 0.0028 * (alt - 32000));
+                press = 868.0 * Math.exp(-0.00014 * (alt - 32000));
+            } else {
+                return { rho: 0, soundSpeed: 300 };
+            }
+
+            const rho = press / (287.058 * temp);
+            const soundSpeed = Math.sqrt(1.4 * 287.058 * temp);
+            return { rho: Math.max(0, rho), soundSpeed: soundSpeed };
+        }
+
+        // Fetter Drag Model
+        function getFetterCd(mach, baseCd) {
+            let cd_v2;
+            if (mach < 0.8) {
+                cd_v2 = 0.15 + 0.03 * Math.pow(mach / 0.8, 2);
+            } else if (mach < 1.2) {
+                const t = (mach - 0.8) / 0.4;
+                cd_v2 = 0.18 + 0.20 * Math.sin(t * Math.PI / 2);
+            } else if (mach < 5.0) {
+                cd_v2 = 0.15 + 0.23 / Math.sqrt(mach);
+            } else {
+                cd_v2 = 0.15 + 0.10 / (1.0 + 0.15 * mach);
+            }
+            return cd_v2 * (baseCd / 0.35);
+        }
+
+        // Trajectory Numerical Integration (RK4)
+        function calculateTrajectory() {
+            const p = currentParams;
+            const dmDt = p.thrust / p.ve;
+            const burnTime = p.mfuel / dmDt;
+
+            // Launch Site at 45 deg N Latitude
+            const lat0 = 45 * Math.PI / 180;
+            const lon0 = 0;
+            const r0 = R_EARTH;
+
+            let px = r0 * Math.cos(lat0) * Math.cos(lon0);
+            let py = r0 * Math.cos(lat0) * Math.sin(lon0);
+            let pz = r0 * Math.sin(lat0);
+
+            // Local frame vectors
+            const upX = Math.cos(lat0) * Math.cos(lon0);
+            const upY = Math.cos(lat0) * Math.sin(lon0);
+            const upZ = Math.sin(lat0);
+
+            const northX = -Math.sin(lat0) * Math.cos(lon0);
+            const northY = -Math.sin(lat0) * Math.sin(lon0);
+            const northZ = Math.cos(lat0);
+
+            const eastX = -Math.sin(lon0);
+            const eastY = Math.cos(lon0);
+            const eastZ = 0;
+
+            const dirX = northX * Math.cos(p.angle) * Math.cos(p.azimuth) + eastX * Math.cos(p.angle) * Math.sin(p.azimuth) + upX * Math.sin(p.angle);
+            const dirY = northY * Math.cos(p.angle) * Math.cos(p.azimuth) + eastY * Math.cos(p.angle) * Math.sin(p.azimuth) + upY * Math.sin(p.angle);
+            const dirZ = northZ * Math.cos(p.angle) * Math.cos(p.azimuth) + eastZ * Math.cos(p.angle) * Math.sin(p.azimuth) + upZ * Math.sin(p.angle);
+
+            let vx = dirX * 1.0;
+            let vy = dirY * 1.0;
+            let vz = dirZ * 1.0;
+
+            let time = 0;
+            let dt = 0.05;
+            let currentMass = p.m0;
+
+            trajectoryPoints = [];
+            let maxEk = 0;
+            let maxAlt = 0;
+            let burnoutPoint = null;
+
+            const rStart = Math.sqrt(px*px + py*py + pz*pz);
+
+            while (time < 3600) {
+                const r = Math.sqrt(px*px + py*py + pz*pz);
+                const alt = r - R_EARTH;
+
+                if (alt < -5.0 && time > 2.0) break;
+
+                const speed = Math.sqrt(vx*vx + vy*vy + vz*vz);
+                const atm = getAtmosphere(alt);
+                const mach = speed / atm.soundSpeed;
+
+                let isPowered = false;
+                if (time < burnTime && currentMass > (p.m0 - p.mfuel)) {
+                    isPowered = true;
+                    currentMass -= dmDt * dt;
+                    if (currentMass < (p.m0 - p.mfuel)) currentMass = p.m0 - p.mfuel;
+                }
+
+                if (isPowered && (time + dt >= burnTime || currentMass <= p.m0 - p.mfuel) && !burnoutPoint) {
+                    burnoutPoint = { t: time, speed: speed, alt: alt };
+                }
+
+                let regime = 'subsonic';
+                if (isPowered) regime = 'powered';
+                else if (mach > 5.0) regime = 'hypersonic';
+                else if (mach > 1.2) regime = 'supersonic';
+                else if (mach > 0.8) regime = 'transonic';
+
+                const Ek = 0.5 * currentMass * speed * speed;
+                if (Ek > maxEk) maxEk = Ek;
+
+                const dotP = (px*upX*rStart + py*upY*rStart + pz*upZ*rStart) / (r * rStart);
+                const angleArc = Math.acos(Math.max(-1, Math.min(1, dotP)));
+                const downrange = R_EARTH * angleArc;
+
+                if (alt > maxAlt) maxAlt = alt;
+
+                // Circular Earth coordinates projection: x2d = (R_E + alt) * sin(theta), y2d = (R_E + alt) * cos(theta) - R_E
+                const x2d = (R_EARTH + alt) * Math.sin(angleArc);
+                const y2d = (R_EARTH + alt) * Math.cos(angleArc) - R_EARTH;
+
+                trajectoryPoints.push({
+                    t: time,
+                    x2d: x2d,
+                    y2d: y2d,
+                    speed: speed,
+                    mach: mach,
+                    alt: alt,
+                    range: downrange,
+                    mass: currentMass,
+                    Ek: Ek,
+                    regime: regime
+                });
+
+                // RK4 Integrator with thrust aligned along body vector (dirX, dirY, dirZ)
+                const getAccel = (PX, PY, PZ, VX, VY, VZ, m, tSec) => {
+                    const rCur = Math.sqrt(PX*PX + PY*PY + PZ*PZ);
+                    const hCur = rCur - R_EARTH;
+                    const atmCur = getAtmosphere(hCur);
+                    const vMag = Math.sqrt(VX*VX + VY*VY + VZ*VZ);
+
+                    const ux = vMag > 1e-4 ? VX / vMag : dirX;
+                    const uy = vMag > 1e-4 ? VY / vMag : dirY;
+                    const uz = vMag > 1e-4 ? VZ / vMag : dirZ;
+
+                    const gx = - (GM_EARTH / (rCur * rCur * rCur)) * PX;
+                    const gy = - (GM_EARTH / (rCur * rCur * rCur)) * PY;
+                    const gz = - (GM_EARTH / (rCur * rCur * rCur)) * PZ;
+
+                    const curMach = vMag / atmCur.soundSpeed;
+                    const curCd = getFetterCd(curMach, p.baseCd);
+
+                    const dragMag = 0.5 * atmCur.rho * vMag * vMag * p.area * curCd;
+                    const axDrag = - (dragMag / m) * ux;
+                    const ayDrag = - (dragMag / m) * uy;
+                    const azDrag = - (dragMag / m) * uz;
+
+                    let axThrust = 0, ayThrust = 0, azThrust = 0;
+                    if (tSec < burnTime && m > (p.m0 - p.mfuel)) {
+                        axThrust = (p.thrust / m) * dirX;
+                        ayThrust = (p.thrust / m) * dirY;
+                        azThrust = (p.thrust / m) * dirZ;
+                    }
+
+                    const axCor = 2 * OMEGA_EARTH * VY;
+                    const ayCor = -2 * OMEGA_EARTH * VX;
+                    const azCor = 0;
+
+                    const axCen = OMEGA_EARTH * OMEGA_EARTH * PX;
+                    const ayCen = OMEGA_EARTH * OMEGA_EARTH * PY;
+                    const azCen = 0;
+
+                    return {
+                        ax: gx + axDrag + axThrust + axCor + axCen,
+                        ay: gy + ayDrag + ayThrust + ayCor + ayCen,
+                        az: gz + azDrag + azThrust + azCor + azCen
+                    };
+                };
+
+                const a1 = getAccel(px, py, pz, vx, vy, vz, currentMass, time);
+                const vx2 = vx + 0.5 * dt * a1.ax, vy2 = vy + 0.5 * dt * a1.ay, vz2 = vz + 0.5 * dt * a1.az;
+                const px2 = px + 0.5 * dt * vx, py2 = py + 0.5 * dt * vy, pz2 = pz + 0.5 * dt * vz;
+
+                const a2 = getAccel(px2, py2, pz2, vx2, vy2, vz2, currentMass, time + 0.5 * dt);
+                const vx3 = vx + 0.5 * dt * a2.ax, vy3 = vy + 0.5 * dt * a2.ay, vz3 = vz + 0.5 * dt * a2.az;
+                const px3 = px + 0.5 * dt * vx2, py3 = py + 0.5 * dt * vy2, pz3 = pz + 0.5 * dt * vz2;
+
+                const a3 = getAccel(px3, py3, pz3, vx3, vy3, vz3, currentMass, time + 0.5 * dt);
+                const vx4 = vx + dt * a3.ax, vy4 = vy + dt * a3.ay, vz4 = vz + dt * a3.az;
+                const px4 = px + dt * vx3, py4 = py + dt * vy3, pz4 = pz + dt * vz3;
+
+                const a4 = getAccel(px4, py4, pz4, vx4, vy4, vz4, currentMass, time + dt);
+
+                vx += (a1.ax + 2*a2.ax + 2*a3.ax + a4.ax) * (dt / 6);
+                vy += (a1.ay + 2*a2.ay + 2*a3.ay + a4.ay) * (dt / 6);
+                vz += (a1.az + 2*a2.az + 2*a3.az + a4.az) * (dt / 6);
+
+                px += vx * dt;
+                py += vy * dt;
+                pz += vz * dt;
+
+                time += dt;
+            }
+
+            const lastP = trajectoryPoints[trajectoryPoints.length - 1];
+            const poweredPoints = trajectoryPoints.filter(pt => pt.regime === 'powered');
+            const lastPoweredSpeed = poweredPoints.length > 0 ? poweredPoints[poweredPoints.length - 1].speed : trajectoryPoints[0].speed;
+
+            flightMetrics = {
+                dmDt: dmDt,
+                vBurnout: burnoutPoint ? burnoutPoint.speed : lastPoweredSpeed,
+                tFlight: lastP ? lastP.t : 0,
+                maxAlt: maxAlt,
+                range: lastP ? lastP.range : 0,
+                vImpact: lastP ? lastP.speed : 0,
+                maxEk: maxEk
+            };
+
+            document.getElementById('calcDmDt').innerText = `${dmDt.toFixed(1)} kg/s`;
+            document.getElementById('calcVburn').innerText = `${Math.round(flightMetrics.vBurnout).toLocaleString()} m/s`;
+            document.getElementById('calcTflight').innerText = `${Math.round(flightMetrics.tFlight)} s`;
+            document.getElementById('calcApogee').innerText = `${(maxAlt / 1000).toFixed(1)} km`;
+            document.getElementById('calcRange').innerText = `${(flightMetrics.range / 1000).toFixed(1)} km`;
+            document.getElementById('calcVimpact').innerText = `${Math.round(flightMetrics.vImpact).toLocaleString()} m/s`;
+
+            fitTrajectoryToView();
+            animProgress = 0;
+            currentPointIdx = 0;
+            updateTelemetry(0);
+        }
+
+        // Auto-fit view camera to trajectory
+        function fitTrajectoryToView() {
+            if (trajectoryPoints.length === 0) return;
+
+            let minX = 0, maxX = flightMetrics.range;
+            let minY = - (flightMetrics.range * flightMetrics.range) / (2 * R_EARTH);
+            let maxY = flightMetrics.maxAlt;
+
+            const spanX = Math.max(maxX - minX, 10000);
+            const spanY = Math.max(maxY - minY, 5000);
+
+            const padLeft = canvas.width * 0.12;
+            const padRight = canvas.width * 0.12;
+            const padTop = canvas.height * 0.15;
+            const padBottom = canvas.height * 0.18;
+
+            const availW = canvas.width - padLeft - padRight;
+            const availH = canvas.height - padTop - padBottom;
+
+            const scaleX = availW / spanX;
+            const scaleY = availH / spanY;
+            scale = Math.min(scaleX, scaleY);
+
+            panX = padLeft - minX * scale + (availW - spanX * scale) / 2;
+            panY = canvas.height - padBottom + minY * scale - (availH - spanY * scale) / 2;
+
+            autoFitBounds = { minX, maxX, minY, maxY, scale, panX, panY };
+        }
+
+        function reset2DView() {
+            trackMissile = false;
+            document.getElementById('btnTrack').innerText = 'Track Missile: OFF';
+            fitTrajectoryToView();
+        }
+
+        function toggleTrackMissile() {
+            trackMissile = !trackMissile;
+            document.getElementById('btnTrack').innerText = `Track Missile: ${trackMissile ? 'ON' : 'OFF'}`;
+        }
+
+        function zoomView(factor) {
+            zoomViewAt(factor, canvas.width / 2, canvas.height / 2);
+        }
+
+        function zoomViewAt(factor, cx, cy) {
+            const worldX = (cx - panX) / scale;
+            const worldY = (panY - cy) / scale;
+
+            scale *= factor;
+
+            panX = cx - worldX * scale;
+            panY = cy + worldY * scale;
+        }
+
+        function worldToScreen(x, y) {
+            return {
+                px: panX + x * scale,
+                py: panY - y * scale
+            };
+        }
+
+        // Render 2D Scene
+        function render2DScene() {
+            const w = canvas.width;
+            const h = canvas.height;
+            ctx.clearRect(0, 0, w, h);
+
+            // Sky background gradient
+            const skyGrad = ctx.createLinearGradient(0, 0, 0, h);
+            skyGrad.addColorStop(0, '#020617');
+            skyGrad.addColorStop(0.7, '#0f172a');
+            skyGrad.addColorStop(1, '#1e293b');
+            ctx.fillStyle = skyGrad;
+            ctx.fillRect(0, 0, w, h);
+
+            // Center of Earth in screen space
+            const earthCenterPx = panX;
+            const earthCenterPy = panY + R_EARTH * scale;
+
+            // Draw Altitude Concentric Grid Circles & Earth Surface
+            drawConcentricGridAndEarth(w, h, earthCenterPx, earthCenterPy);
+
+            // Draw Saved Trajectories
+            drawSavedTrajectories();
+
+            // Draw Current Trajectory
+            if (trajectoryPoints.length > 1) {
+                drawCurrentTrajectory();
+            }
+
+            // Draw Markers
+            drawTrajectoryMarkers();
+
+            // Draw Missile
+            drawMissileSprite();
+        }
+
+        // Render true circular Earth surface and concentric altitude circles
+        function drawConcentricGridAndEarth(w, h, cxEarth, cyEarth) {
+            ctx.save();
+
+            // 1. Concentric Altitude Rings (Every 10km, 50km, or 100km)
+            const altStep = flightMetrics.maxAlt > 200000 ? 50000 : (flightMetrics.maxAlt > 50000 ? 20000 : 5000);
+            ctx.strokeStyle = 'rgba(51, 65, 85, 0.4)';
+            ctx.fillStyle = '#64748b';
+            ctx.font = '10px monospace';
+            ctx.lineWidth = 1;
+            ctx.setLineDash([3, 3]);
+
+            for (let alt = altStep; alt <= flightMetrics.maxAlt * 1.5; alt += altStep) {
+                const ringRadius = (R_EARTH + alt) * scale;
+                ctx.beginPath();
+                ctx.arc(cxEarth, cyEarth, ringRadius, 0, Math.PI * 2);
+                ctx.stroke();
+
+                // Altitude text label anchored at x = 0
+                const labelScr = worldToScreen(0, alt);
+                if (labelScr.py >= 0 && labelScr.py <= h) {
+                    ctx.fillText(`${(alt / 1000).toFixed(0)} km`, labelScr.px + 6, labelScr.py - 4);
+                }
+            }
+
+            // 2. Earth Surface Circle (Solid Arc)
+            const earthRadiusPx = R_EARTH * scale;
+            ctx.setLineDash([]);
+            ctx.fillStyle = '#0f172a';
+            ctx.strokeStyle = '#38bdf8';
+            ctx.lineWidth = 2;
+
+            ctx.beginPath();
+            ctx.arc(cxEarth, cyEarth, earthRadiusPx, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.stroke();
+
+            // 3. Atmosphere Boundary Outer Ring (80 km altitude)
+            const atmoRadiusPx = (R_EARTH + 80000) * scale;
+            ctx.strokeStyle = 'rgba(56, 189, 248, 0.2)';
+            ctx.lineWidth = 1.5;
+            ctx.setLineDash([6, 4]);
+            ctx.beginPath();
+            ctx.arc(cxEarth, cyEarth, atmoRadiusPx, 0, Math.PI * 2);
+            ctx.stroke();
+
+            ctx.restore();
+        }
+
+        // Draw current trajectory with color-coded regimes
+        function drawCurrentTrajectory() {
+            ctx.save();
+
+            const colorMap = {
+                powered: '#ffffff',
+                hypersonic: '#ef4444',
+                supersonic: '#f97316',
+                transonic: '#eab308',
+                subsonic: '#3b82f6'
+            };
+
+            let prevPt = trajectoryPoints[0];
+
+            for (let i = 1; i < trajectoryPoints.length; i++) {
+                const pt = trajectoryPoints[i];
+                const p1 = worldToScreen(prevPt.x2d, prevPt.y2d);
+                const p2 = worldToScreen(pt.x2d, pt.y2d);
+
+                const isPowered = pt.regime === 'powered';
+
+                if (isPowered) {
+                    ctx.strokeStyle = '#000000';
+                    ctx.lineWidth = 6;
+                    ctx.beginPath();
+                    ctx.moveTo(p1.px, p1.py);
+                    ctx.lineTo(p2.px, p2.py);
+                    ctx.stroke();
+                }
+
+                ctx.strokeStyle = colorMap[pt.regime] || '#3b82f6';
+                ctx.lineWidth = isPowered ? 3.5 : 2.5;
+                ctx.beginPath();
+                ctx.moveTo(p1.px, p1.py);
+                ctx.lineTo(p2.px, p2.py);
+                ctx.stroke();
+
+                prevPt = pt;
+            }
+
+            ctx.restore();
+        }
+
+        function drawSavedTrajectories() {
+            if (savedTrajectories.length === 0) return;
+
+            const colors = ['#38bdf8', '#f59e0b', '#22c55e', '#a855f7', '#ec4899'];
+
+            savedTrajectories.forEach((saved, idx) => {
+                ctx.save();
+                ctx.strokeStyle = colors[idx % colors.length];
+                ctx.lineWidth = 2;
+                ctx.setLineDash([5, 3]);
+
+                ctx.beginPath();
+                saved.points.forEach((pt, pIdx) => {
+                    const scr = worldToScreen(pt.x2d, pt.y2d);
+                    if (pIdx === 0) ctx.moveTo(scr.px, scr.py);
+                    else ctx.lineTo(scr.px, scr.py);
+                });
+                ctx.stroke();
+
+                let topPt = saved.points[0];
+                saved.points.forEach(p => { if (p.alt > topPt.alt) topPt = p; });
+                const topScr = worldToScreen(topPt.x2d, topPt.y2d);
+
+                ctx.fillStyle = colors[idx % colors.length];
+                ctx.font = 'bold 10px monospace';
+                ctx.fillText(saved.name, topScr.px + 6, topScr.py - 6);
+
+                ctx.restore();
+            });
+        }
+
+        function drawTrajectoryMarkers() {
+            if (trajectoryPoints.length === 0) return;
+
+            ctx.save();
+            const startPt = trajectoryPoints[0];
+            const endPt = trajectoryPoints[trajectoryPoints.length - 1];
+
+            // Launch Site Marker
+            const sScr = worldToScreen(startPt.x2d, startPt.y2d);
+            ctx.fillStyle = '#22c55e';
+            ctx.beginPath();
+            ctx.arc(sScr.px, sScr.py, 5, 0, Math.PI * 2);
+            ctx.fill();
+
+            // Impact Target Marker
+            const eScr = worldToScreen(endPt.x2d, endPt.y2d);
+            ctx.strokeStyle = '#ef4444';
+            ctx.lineWidth = 2;
+            ctx.beginPath();
+            ctx.arc(eScr.px, eScr.py, 7, 0, Math.PI * 2);
+            ctx.stroke();
+            ctx.fillStyle = '#ef4444';
+            ctx.beginPath();
+            ctx.arc(eScr.px, eScr.py, 3, 0, Math.PI * 2);
+            ctx.fill();
+
+            // Burnout Marker
+            const burnPt = trajectoryPoints.find(p => p.regime !== 'powered');
+            if (burnPt) {
+                const bScr = worldToScreen(burnPt.x2d, burnPt.y2d);
+                ctx.fillStyle = '#ffffff';
+                ctx.strokeStyle = '#000000';
+                ctx.lineWidth = 1.5;
+                ctx.beginPath();
+                ctx.arc(bScr.px, bScr.py, 4, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.stroke();
+            }
+
+            // Apogee Marker
+            let topPt = trajectoryPoints[0];
+            trajectoryPoints.forEach(p => { if (p.alt > topPt.alt) topPt = p; });
+            const aScr = worldToScreen(topPt.x2d, topPt.y2d);
+
+            ctx.fillStyle = '#f59e0b';
+            ctx.font = 'bold 12px sans-serif';
+            ctx.fillText('★', aScr.px - 6, aScr.py - 8);
+
+            ctx.restore();
+        }
+
+        function drawMissileSprite() {
+            if (trajectoryPoints.length === 0) return;
+
+            const pt = trajectoryPoints[currentPointIdx] || trajectoryPoints[0];
+            const scr = worldToScreen(pt.x2d, pt.y2d);
+
+            ctx.save();
+            ctx.translate(scr.px, scr.py);
+
+            let angle = -Math.PI / 4;
+            if (currentPointIdx < trajectoryPoints.length - 1) {
+                const nextPt = trajectoryPoints[currentPointIdx + 1];
+                const nScr = worldToScreen(nextPt.x2d, nextPt.y2d);
+                angle = Math.atan2(nScr.py - scr.py, nScr.px - scr.px);
+            }
+            ctx.rotate(angle);
+
+            if (pt.regime === 'powered') {
+                ctx.fillStyle = '#f97316';
+                ctx.beginPath();
+                ctx.moveTo(-8, -3);
+                ctx.lineTo(-18, 0);
+                ctx.lineTo(-8, 3);
+                ctx.closePath();
+                ctx.fill();
+
+                ctx.fillStyle = '#eab308';
+                ctx.beginPath();
+                ctx.moveTo(-8, -1.5);
+                ctx.lineTo(-14, 0);
+                ctx.lineTo(-8, 1.5);
+                ctx.closePath();
+                ctx.fill();
+            }
+
+            ctx.fillStyle = '#38bdf8';
+            ctx.strokeStyle = '#ffffff';
+            ctx.lineWidth = 1;
+
+            ctx.beginPath();
+            ctx.moveTo(10, 0);
+            ctx.lineTo(-6, -4);
+            ctx.lineTo(-6, 4);
+            ctx.closePath();
+            ctx.fill();
+            ctx.stroke();
+
+            ctx.restore();
+
+            if (trackMissile) {
+                panX = canvas.width / 2 - pt.x2d * scale;
+                panY = canvas.height / 2 + pt.y2d * scale;
+            }
+        }
+
+        function togglePlay() {
+            isPlaying = !isPlaying;
+            document.getElementById('btnPlay').innerText = isPlaying ? '⏸ Pause' : '▶ Play';
+            if (isPlaying && animProgress >= 1.0) {
+                animProgress = 0;
+            }
+        }
+
+        function resetSim() {
+            isPlaying = false;
+            animProgress = 0;
+            currentPointIdx = 0;
+            document.getElementById('btnPlay').innerText = '▶ Play';
+            if (trajectoryPoints.length > 0) {
+                updateTelemetry(0);
+            }
+        }
+
+        function stickTrajectory() {
+            if (trajectoryPoints.length === 0) return;
+
+            const name = document.getElementById('presetNameTag').innerText;
+            const savedItem = {
+                id: Date.now(),
+                name: name,
+                params: { ...currentParams },
+                metrics: { ...flightMetrics },
+                points: [...trajectoryPoints]
+            };
+
+            savedTrajectories.push(savedItem);
+            updateSavedTable();
+        }
+
+        function clearSaved() {
+            savedTrajectories = [];
+            updateSavedTable();
+        }
+
+        function updateSavedTable() {
+            const tbody = document.getElementById('savedTableBody');
+            document.getElementById('savedCountTag').innerText = `${savedTrajectories.length} Saved`;
+
+            if (savedTrajectories.length === 0) {
+                tbody.innerHTML = `
+                    <tr>
+                        <td colspan="5" style="text-align:center; color:var(--text-muted); padding:10px;">
+                            No trajectories saved yet. Click "Save / Compare" to stick trajectories.
+                        </td>
+                    </tr>
+                `;
+                return;
+            }
+
+            tbody.innerHTML = '';
+            savedTrajectories.forEach(item => {
+                const tr = document.createElement('tr');
+                tr.innerHTML = `
+                    <td><strong>${item.name}</strong></td>
+                    <td>${(item.params.angle * 180 / Math.PI).toFixed(0)}°</td>
+                    <td>${(item.metrics.range / 1000).toFixed(1)}km</td>
+                    <td>${(item.metrics.maxAlt / 1000).toFixed(1)}km</td>
+                    <td>${Math.round(item.metrics.vBurnout)}m/s</td>
+                `;
+                tbody.appendChild(tr);
+            });
+        }
+
+        function updateTelemetry(idx) {
+            if (!trajectoryPoints || trajectoryPoints.length === 0) return;
+            currentPointIdx = idx;
+            const pt = trajectoryPoints[idx];
+
+            document.getElementById('telTime').innerText = `${pt.t.toFixed(1)} s`;
+            document.getElementById('telSpeed').innerText = `${Math.round(pt.speed)} m/s (Mach ${pt.mach.toFixed(1)})`;
+
+            const ekPct = flightMetrics.maxEk > 0 ? (pt.Ek / flightMetrics.maxEk) * 100 : 0;
+            document.getElementById('telEk').innerText = `${ekPct.toFixed(1)} %`;
+            document.getElementById('telAlt').innerText = `${(pt.alt / 1000).toFixed(1)} km`;
+            document.getElementById('telRange').innerText = `${(pt.range / 1000).toFixed(1)} km`;
+
+            const badge = document.getElementById('telRegime');
+            badge.className = `regime-badge regime-${pt.regime}`;
+            badge.innerText = pt.regime.toUpperCase();
+        }
+
+        function animateLoop(timestamp) {
+            requestAnimationFrame(animateLoop);
+
+            if (!lastTimestamp) lastTimestamp = timestamp;
+            const delta = (timestamp - lastTimestamp) / 1000;
+            lastTimestamp = timestamp;
+
+            if (isPlaying && trajectoryPoints.length > 0) {
+                animProgress += delta * 0.15;
+                if (animProgress >= 1.0) {
+                    animProgress = 1.0;
+                    isPlaying = false;
+                    document.getElementById('btnPlay').innerText = '▶ Play';
+                }
+                const ptIndex = Math.min(Math.floor(animProgress * (trajectoryPoints.length - 1)), trajectoryPoints.length - 1);
+                updateTelemetry(ptIndex);
+            }
+
+            render2DScene();
+        }
+
+        function toggleModal(open) {
+            document.getElementById('physicsModal').classList.toggle('open', open);
+        }
+    </script>
+</body>
+</html>
